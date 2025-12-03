@@ -1,0 +1,26 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_TIM
+	bool "REALTEK MCU tim driver"
+	default y
+	depends on USE_HAL_REALTEK_TIM
+
+	select USE_HAL_REALTEK_RCC
+	select USE_HAL_REALTEK_PINMUX
+	select USE_HAL_REALTEK_NVIC
+
+	help
+	  This option enables the tim driver for REALTEK MCU.
+
+config REALTEK_ENHTIM
+	bool "REALTEK MCU enhtim driver"
+	default y
+	depends on USE_HAL_REALTEK_ENHTIM
+
+	select USE_HAL_REALTEK_RCC
+	select USE_HAL_REALTEK_PINMUX
+	select USE_HAL_REALTEK_NVIC
+
+	help
+	  This option enables the enhtim driver for REALTEK MCU.

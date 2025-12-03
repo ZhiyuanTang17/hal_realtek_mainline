@@ -1,0 +1,14 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_DMA
+	bool "REALTEK MCU dma driver"
+	default y
+	depends on USE_HAL_REALTEK_DMA
+
+	select USE_HAL_REALTEK_RCC
+	select USE_HAL_REALTEK_PINMUX
+	select USE_HAL_REALTEK_NVIC
+
+	help
+	  This option enables the dma driver for REALTEK MCU.

@@ -1,0 +1,14 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_KEYSCAN
+	bool "REALTEK MCU keyscan driver"
+	default y
+	depends on USE_HAL_REALTEK_KEYSCAN
+
+	select USE_HAL_REALTEK_RCC
+	select USE_HAL_REALTEK_PINMUX
+	select USE_HAL_REALTEK_NVIC
+
+	help
+	  This option enables the keyscan driver for REALTEK MCU.

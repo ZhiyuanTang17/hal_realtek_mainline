@@ -1,0 +1,26 @@
+# Copyright (c) 2025 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_AON_QDEC
+	bool "REALTEK MCU aon qdec driver"
+	default y
+	depends on USE_HAL_REALTEK_AON_QDEC
+
+	select USE_HAL_REALTEK_RCC
+	select USE_HAL_REALTEK_PINMUX
+	select USE_HAL_REALTEK_NVIC
+
+	help
+	  This option enables the aon qdec driver for REALTEK MCU.
+
+config REALTEK_QDEC
+	bool "REALTEK MCU qdec driver"
+	default y
+	depends on USE_HAL_REALTEK_QDEC
+
+	select USE_HAL_REALTEK_RCC
+	select USE_HAL_REALTEK_PINMUX
+	select USE_HAL_REALTEK_NVIC
+
+	help
+	  This option enables the qdec driver for REALTEK MCU.

@@ -1,0 +1,33 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+menu "realtek bsp driver"
+rsource "adc/Kconfig"
+rsource "uart/Kconfig"
+rsource "rcc/Kconfig"
+rsource "pinmux/Kconfig"
+rsource "nvic/Kconfig"
+rsource "tim/Kconfig"
+rsource "rtc/Kconfig"
+rsource "dma/Kconfig"
+rsource "gpio/Kconfig"
+rsource "i2c/Kconfig"
+rsource "keyscan/Kconfig"
+rsource "ir/Kconfig"
+rsource "i2s/Kconfig"
+rsource "codec/Kconfig"
+rsource "qdec/Kconfig"
+rsource "can/Kconfig"
+rsource "spi/Kconfig"
+rsource "sdhc/Kconfig"
+rsource "usb/Kconfig"
+rsource "wdt/Kconfig"
+rsource "bluetooth/Kconfig"
+rsource "mac_802154/Kconfig"
+endmenu
+
+config REALTEK_USING_RTL876X_DRIVER
+	bool
+	default y
+	depends on SOC_SERIES_RTL8752H
+

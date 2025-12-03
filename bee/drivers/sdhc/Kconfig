@@ -1,0 +1,16 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_SDHC
+	bool "REALTEK MCU sdhc driver"
+	default y
+	depends on USE_HAL_REALTEK_SDHC
+
+	select USE_HAL_REALTEK_RCC
+	select USE_HAL_REALTEK_PINMUX
+	select USE_HAL_REALTEK_NVIC
+	select REALTEK_USING_SDK_LIB
+
+	help
+	  This option enables the sdhc driver for REALTEK MCU.
+

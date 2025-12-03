@@ -1,0 +1,14 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_I2S
+	bool "REALTEK MCU i2s driver"
+	default y
+	depends on USE_HAL_REALTEK_I2S
+
+	select USE_HAL_REALTEK_RCC
+	select USE_HAL_REALTEK_PINMUX
+	select USE_HAL_REALTEK_NVIC
+
+	help
+	  This option enables the i2s driver for REALTEK MCU.

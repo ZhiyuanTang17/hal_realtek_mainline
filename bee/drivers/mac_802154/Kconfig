@@ -1,0 +1,9 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_MAC_802154
+	bool "REALTEK MCU mac 802154 driver"
+	default n
+
+	help
+	  This option enables the mac 802154 driver for REALTEK MCU.

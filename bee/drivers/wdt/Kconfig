@@ -1,0 +1,20 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_AON_WDT
+	bool "REALTEK MCU aon watchdog timer"
+	default y
+	depends on USE_HAL_REALTEK_AON_WDT
+	
+	help
+	  This option enables the aon wdt driver for REALTEK family of
+	  processors.
+
+config REALTEK_CORE_WDT
+	bool "REALTEK MCU core watchdog timer"
+	default y
+	depends on USE_HAL_REALTEK_CORE_WDT
+	
+	help
+	  This option enables the core wdt driver for REALTEK family of
+	  processors.

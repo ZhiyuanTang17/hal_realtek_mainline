@@ -1,0 +1,10 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_RCC
+	bool "REALTEK MCU rcc driver"
+	default y
+	depends on USE_HAL_REALTEK_RCC
+
+	help
+	  This option enables the rcc driver for REALTEK MCU.

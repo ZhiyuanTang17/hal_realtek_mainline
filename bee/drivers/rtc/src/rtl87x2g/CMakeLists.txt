@@ -1,5 +1,5 @@
 # Copyright (c) 2024 Realtek Semiconductor Corp.
 # SPDX-License-Identifier: Apache-2.0
+zephyr_library()
 
-rsource "ameba/Kconfig"
-rsource "bee/Kconfig"
+zephyr_library_sources(rtl87x2g_rtc.c)

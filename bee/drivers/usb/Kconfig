@@ -1,0 +1,14 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_USB
+	bool "RealTek MCU usb driver"
+	default y
+	depends on USE_HAL_REALTEK_USB
+
+config REALTEK_USING_USB_HAL
+	bool "RealTek usb hal library"
+	default y if REALTEK_USB
+    select REALTEK_USING_SDK_LIB
+	help
+		This option enables the usb hal library for REALTEK MCU.
