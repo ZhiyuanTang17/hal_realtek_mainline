@@ -29,11 +29,13 @@ SECTIONS
     PROVIDE(log_module_trace_init = 0x0000413b);
     PROVIDE(log_module_trace_set = 0x0000415f);
     PROVIDE(log_module_bitmap_trace_set = 0x000041ab);
+    PROVIDE(log_buffer_optimise_enable = 0x00004211);
     PROVIDE(LogUartDMAStart = 0x000042af);
     PROVIDE(LogDMA_SM_Dispatch = 0x000042c1);
     PROVIDE(LogUartDMAInit = 0x00004349);
     PROVIDE(LogUartDMAIdleHook = 0x00004449);
     PROVIDE(log_pm_check = 0x000044b7);
+    PROVIDE(hw_aes_create_mutex = 0x00004561);
     PROVIDE(hw_aes_encrypt128_use_dma = 0x0000470d);
     PROVIDE(hw_aes_decrypt128_use_dma = 0x00004751);
     PROVIDE(swap_buf = 0x00004795);
@@ -46,6 +48,8 @@ SECTIONS
     PROVIDE(aes256_ecb_encrypt_msb2lsb = 0x00004985);
     PROVIDE(aes256_ecb_decrypt_msb2lsb = 0x0000499d);
     PROVIDE(hw_aes_decrypt_16byte = 0x000049e1);
+    PROVIDE(set_hci_mode_flag = 0x00006011);
+    PROVIDE(check_hci_mode_flag = 0x0000603f);
     PROVIDE(check_image_chksum = 0x0000616b);
     PROVIDE(check_header_valid = 0x00006195);
     PROVIDE(get_image_addr_in_bank = 0x0000628b);
@@ -58,6 +62,7 @@ SECTIONS
     PROVIDE(get_active_bank_image_version = 0x000064c7);
     PROVIDE(image_entry_check = 0x0000651b);
     PROVIDE(platform_random = 0x000065e7);
+    PROVIDE(init_osc_sdm_timer = 0x00007883);
     PROVIDE(btaon_fast_read = 0x0000a1d3);
     PROVIDE(btaon_fast_read_8b = 0x0000a1e7);
     PROVIDE(btaon_fast_read_safe = 0x0000a207);
@@ -164,9 +169,17 @@ SECTIONS
     PROVIDE(platform_delay_ms = 0x002002b8);
     PROVIDE(set_up_32k_clk_src = 0x00200308);
     PROVIDE(set_active_mode_clk_src = 0x0020039c);
+    PROVIDE(work_around_32k_power_glitch = 0x002003a0);
     PROVIDE(work_around_32k_power_glitch_after_restart = 0x002003a4);
+    PROVIDE(platform_rtc_aon_init = 0x0020089c);
     PROVIDE(ft_paras_apply = 0x002008e8);
     PROVIDE(si_flow_data_init = 0x002008f0);
+    PROVIDE(si_flow_after_power_on_sequence_restart = 0x002008f8);
+    PROVIDE(pmu_apply_voltage_tune = 0x00200980);
+    PROVIDE(pmu_power_on_sequence_restart = 0x00200990);
+    PROVIDE(power_manager_master_init = 0x00200a48);
+    PROVIDE(power_manager_slave_init = 0x00200aa0);
+    PROVIDE(platform_pm_init = 0x00200b14);
     PROVIDE(os_sched_restore = 0x00200b18);
     PROVIDE(os_sys_tick_rate_get = 0x00200b1c);
     PROVIDE(os_sys_tick_clk_get = 0x00200b20);
@@ -179,6 +192,8 @@ SECTIONS
     PROVIDE(os_pm_store = 0x00200b3c);
     PROVIDE(os_pm_restore = 0x00200b40);
     PROVIDE(os_pm_init = 0x00200b44);
+    PROVIDE(phy_hw_control_init = 0x00200b54);
+    PROVIDE(phy_init = 0x00200b90);
     PROVIDE(flash_nor_get_bit_mode = 0x00200d68);
     PROVIDE(flash_nor_try_high_speed_mode = 0x00200db0);
     PROVIDE(flash_nor_erase_locked = 0x00200dc4);

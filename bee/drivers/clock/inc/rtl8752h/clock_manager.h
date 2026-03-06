@@ -29,5 +29,7 @@ extern "C" {
 extern void (*set_active_mode_clk_src)(void);
 extern void (*set_up_32k_clk_src)(void);
 extern void (*work_around_32k_power_glitch_after_restart)(void);
+extern void (*work_around_32k_power_glitch)(void);
+void init_osc_sdm_timer(void);
 
 #endif
