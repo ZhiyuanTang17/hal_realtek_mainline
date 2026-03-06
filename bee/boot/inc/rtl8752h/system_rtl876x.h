@@ -10,7 +10,6 @@
 #ifndef SYSTEM_RTL876X_H
 #define SYSTEM_RTL876X_H
 
-
 /*============================================================================*
  *                      Headers
  *============================================================================*/
@@ -86,7 +85,6 @@ extern void SystemCall(uint32_t opcode, uint32_t parm);
 extern void update_ram_layout(uint32_t app_global_size, uint32_t data_heap_size,
                               uint32_t share_cache_ram_size);
 
-
 /**
  * @brief  Call the system service by stack.
  * @param  opcode: operation code.
@@ -95,12 +93,26 @@ extern void update_ram_layout(uint32_t app_global_size, uint32_t data_heap_size,
  */
 extern void SystemCall_Stack(uint32_t opcode, ...);
 
-
+/* RTL8752H SoC Initialization Functions */
 extern void (*si_flow_data_init)(void);
 extern void (*ft_paras_apply)(void);
 extern void hal_setup_hardware(void);
 extern void hal_setup_cpu(void);
 extern void share_cache_ram(void);
+extern bool check_hci_mode_flag(void);
+extern void set_hci_mode_flag(bool enable);
+extern void log_buffer_optimise_enable(void);
+extern bool hw_aes_create_mutex(void);
+extern void (*phy_hw_control_init)(bool dlps_flow);
+extern void (*phy_init)(uint8_t dlps_flow);
+extern void report_cache_info(void);
+extern void (*pmu_apply_voltage_tune)(void);
+extern void (*pmu_power_on_sequence_restart)(void);
+extern void (*si_flow_after_power_on_sequence_restart)(void);
+extern void (*platform_rtc_aon_init)(void);
+extern void (*platform_pm_init)(void);
+extern void (*power_manager_master_init)(void);
+extern void (*power_manager_slave_init)(void);
 
 /** @} */ /* End of group SYSTEM_RTL876X_Exported_Functions */
 
@@ -111,4 +123,3 @@ extern void share_cache_ram(void);
 #endif
 
 #endif /* SYSTEM_RTL876X_H */
-
