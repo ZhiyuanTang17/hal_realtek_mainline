@@ -75,6 +75,7 @@ SECTIONS
     PROVIDE(btaon_fast_update_8b = 0x0000a335);
     PROVIDE(btaon_fast_update_safe = 0x0000a351);
     PROVIDE(btaon_fast_update_safe_8b = 0x0000a36d);
+    PROVIDE(flash_nor_get_exist = 0x0000e18b);
     PROVIDE(flash_nor_set_seq_trans = 0x0000e363);
     PROVIDE(flash_nor_get_flash_size = 0x0000e3ab);
     PROVIDE(flash_nor_get_addr_base = 0x0000f8c9);
@@ -162,6 +163,7 @@ SECTIONS
     PROVIDE(os_timer_get_auto_reload = 0x00016bf5);
     PROVIDE(os_timer_is_timer_active = 0x00016c1d);
     PROVIDE(hw_sha256_init = 0x0001aecd);
+    PROVIDE(boot_cfg = 0x00200138);
     PROVIDE(sys_init_cfg = 0x002001b4);
     PROVIDE(pMCU_PPB = 0x00200298);
     PROVIDE(pLogDMA_SM = 0x0020029c);
@@ -194,8 +196,11 @@ SECTIONS
     PROVIDE(os_pm_init = 0x00200b44);
     PROVIDE(phy_hw_control_init = 0x00200b54);
     PROVIDE(phy_init = 0x00200b90);
+    PROVIDE(flash_nor_load_query_info = 0x00200d34);
     PROVIDE(flash_nor_get_bit_mode = 0x00200d68);
+    PROVIDE(flash_nor_set_bp_lv = 0x00200d74);
     PROVIDE(flash_nor_try_high_speed_mode = 0x00200db0);
+    PROVIDE(flash_nor_set_tb_bit = 0x00200db8);
     PROVIDE(flash_nor_erase_locked = 0x00200dc4);
     PROVIDE(flash_nor_write_locked = 0x00200dc8);
     PROVIDE(flash_nor_read_locked = 0x00200dcc);
