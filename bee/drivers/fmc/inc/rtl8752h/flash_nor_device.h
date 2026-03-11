@@ -431,6 +431,20 @@ extern FLASH_NOR_RET_TYPE(*flash_nor_get_bit_mode)(FLASH_NOR_IDX_TYPE idx,
 */
 extern uint32_t flash_nor_get_flash_size(FLASH_NOR_IDX_TYPE idx);
 
+typedef enum
+{
+    FLASH_NOR_EXIST_NONE        = 0,
+    FLASH_NOR_EXIST_BASIC_CMD   = 1,
+    FLASH_NOR_EXIST_ADV_CMD     = 2,
+    FLASH_NOR_EXIST_QUERY_INFO  = 4,
+    FLASH_NOR_EXIST_ALL         = 7,
+} FLASH_NOR_EXIST_LV;
+
+extern FLASH_NOR_RET_TYPE(*flash_nor_set_bp_lv)(FLASH_NOR_IDX_TYPE idx, uint8_t bp_lv);
+extern FLASH_NOR_RET_TYPE(*flash_nor_set_tb_bit)(FLASH_NOR_IDX_TYPE idx, bool from_bottom);
+FLASH_NOR_EXIST_LV flash_nor_get_exist(FLASH_NOR_IDX_TYPE idx);
+extern FLASH_NOR_RET_TYPE(*flash_nor_load_query_info)(FLASH_NOR_IDX_TYPE idx);
+
 /** @} */ /* End of group FLASH_DEVICE_Exported_Functions */
 /** @} */ /* End of group FLASH_DEVICE */
 
