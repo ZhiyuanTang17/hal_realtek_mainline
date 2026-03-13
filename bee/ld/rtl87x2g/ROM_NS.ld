@@ -14,12 +14,7 @@ SECTIONS
     PROVIDE(get_sys_tick_clk_type = 0x00022b8d);
     PROVIDE(hw_aes_mutex_init = 0x0002380d);
     PROVIDE(init_osc_sdm_timer = 0x00023a11);
-    PROVIDE(is_aon_clk_32000Hz = 0x00023e79);
-    PROVIDE(is_btmac_clk_32000Hz = 0x00023e89);
     PROVIDE(is_overlapped = 0x00023ee1);
-    PROVIDE(is_pf_rtc_clk_32000Hz = 0x00023ef9);
-    PROVIDE(is_systick_clk_32000Hz = 0x00023f29);
-    PROVIDE(is_user_rtc_clk_32000Hz = 0x00023f65);
     PROVIDE(log_buffer = 0x00023fd1);
     PROVIDE(log_buffer_lowerstack = 0x000241d9);
     PROVIDE(log_module_bitmap_trace_set = 0x00024515);
@@ -62,6 +57,7 @@ SECTIONS
     PROVIDE(platform_pm_init = 0x0013d834);
     PROVIDE(platform_rtc_aon_init = 0x0013d8ec);
     PROVIDE(pmu_apply_voltage_tune = 0x0013d938);
+    PROVIDE(pmu_auto_switch_map_force_base_level = 0x0013d944);
     PROVIDE(pmu_power_on_sequence_restart = 0x0013d96c);
     PROVIDE(power_manager_master_init = 0x0013da24);
     PROVIDE(power_manager_slave_init = 0x0013db40);
@@ -147,5 +143,4 @@ SECTIONS
     PROVIDE(os_timer_stop = 0x0013e3b0);
     PROVIDE(os_unregister_pm_excluded_handle = 0x0013e3c0);
     PROVIDE(os_vector_table_update = 0x0013e3c4);
-    PROVIDE(pmu_auto_switch_map_force_base_level = 0x0013d944);
 }

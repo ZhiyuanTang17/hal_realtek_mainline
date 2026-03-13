@@ -90,11 +90,6 @@ SECTIONS
     PROVIDE(flash_nor_auto_read_locked = 0x00010f1f);
     PROVIDE(flash_nor_set_seq_trans_enable = 0x00011135);
     PROVIDE(flash_nor_get_id = 0x0001113d);
-    PROVIDE(Pinmux_Config = 0x0001562f);
-    PROVIDE(Pad_Config = 0x00015661);
-    PROVIDE(System_WakeUpPinEnable = 0x00015751);
-    PROVIDE(Pad_DebounceWakeupStatus = 0x000157c5);
-    PROVIDE(System_DebounceWakeupStatus = 0x000157e5);
     PROVIDE(os_mem_alloc_intern = 0x00015fb5);
     PROVIDE(os_mem_zalloc_intern = 0x0001600f);
     PROVIDE(os_mem_aligned_alloc_intern = 0x00016071);
@@ -224,6 +219,7 @@ SECTIONS
     PROVIDE(flash_sem = 0x0020137c);
     PROVIDE(flash_nor_ioctl_buf = 0x00201434);
     PROVIDE(flash_nor_ioctl_buf_len = 0x00201438);
+    PROVIDE(patch_WDG_Config = 0x00201674);
     PROVIDE(patch_osif_os_systick_handler = 0x0020167c);
     PROVIDE(patch_osif_os_delay = 0x00201680);
     PROVIDE(patch_osif_os_sys_time_get = 0x00201684);
@@ -290,5 +286,4 @@ SECTIONS
     PROVIDE(patch_osif_os_timer_pend_function_call = 0x00201778);
     PROVIDE(patch_osif_os_timer_get_auto_reload = 0x0020177c);
     PROVIDE(patch_osif_os_timer_is_timer_active = 0x00201780);
-    PROVIDE(SystemCall = 0x0000181b);
 }

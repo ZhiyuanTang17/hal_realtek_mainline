@@ -1,9 +1,9 @@
 SECTIONS
 {
     PROVIDE(Peripheral_Handler = 0x00003705);
+    PROVIDE(WDG_Enable = 0x000040b1);
     PROVIDE(flash_nor_set_all_info = 0x0000aa79);
     PROVIDE(swap_buf = 0x0001776f);
-    PROVIDE(HardFault_Handler_Rom = 0x0001bf81);
     PROVIDE(get_occd_addr = 0x0001bf89);
     PROVIDE(get_occd_size = 0x0001bf91);
     PROVIDE(get_extra_occd_addr = 0x0001bf99);
@@ -48,12 +48,19 @@ SECTIONS
     PROVIDE(get_stack_patch_valid = 0x0001c219);
     PROVIDE(get_stack_patch_rom_header_addr = 0x0001c221);
     PROVIDE(enable_nonsecure_access_peri_on_register = 0x0001c229);
+    PROVIDE(is_WDG_Enable = 0x0001c2b1);
+    PROVIDE(WDG_Disable = 0x0001c2b9);
+    PROVIDE(WDG_Kick = 0x0001c2c1);
+    PROVIDE(WDG_Start = 0x0001c2c9);
     PROVIDE(WDG_SystemReset = 0x0001c2d1);
     PROVIDE(hw_sha256_init = 0x0001c2e9);
     PROVIDE(hw_sha256_start = 0x0001c2f1);
     PROVIDE(hw_sha256_cpu_update = 0x0001c2f9);
     PROVIDE(hw_sha256_finish = 0x0001c301);
     PROVIDE(hw_sha256 = 0x0001c309);
+    PROVIDE(secure_app_function_call = 0x0001c3b9);
+    PROVIDE(secure_function_call = 0x0001c3c1);
+    PROVIDE(set_secure_func_ptr = 0x0001c3c9);
     PROVIDE(aes128_ecb_encrypt = 0x0001c3d9);
     PROVIDE(aes128_ecb_decrypt = 0x0001c3e1);
     PROVIDE(aes128_ecb_encrypt_msb2lsb = 0x0001c3e9);
@@ -68,5 +75,4 @@ SECTIONS
     PROVIDE(aes256_cbc_decrypt = 0x0001c431);
     PROVIDE(flash_nor_ioctl_buf = 0x0014f40c);
     PROVIDE(flash_nor_ioctl_buf_len = 0x0014f410);
-    PROVIDE(secure_function_call = 0x0001c3c1);
 }

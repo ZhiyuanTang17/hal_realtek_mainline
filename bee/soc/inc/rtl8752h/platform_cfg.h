@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <flash_nor_device.h>
 
 /**
  * @struct EFUSE_PLATFORM_CONFIG_
