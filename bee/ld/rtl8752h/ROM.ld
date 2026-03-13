@@ -219,6 +219,7 @@ SECTIONS
     PROVIDE(flash_sem = 0x0020137c);
     PROVIDE(flash_nor_ioctl_buf = 0x00201434);
     PROVIDE(flash_nor_ioctl_buf_len = 0x00201438);
+    PROVIDE(patch_WDG_Config = 0x00201674);
     PROVIDE(patch_osif_os_systick_handler = 0x0020167c);
     PROVIDE(patch_osif_os_delay = 0x00201680);
     PROVIDE(patch_osif_os_sys_time_get = 0x00201684);
