@@ -9,6 +9,7 @@ SECTIONS
     PROVIDE(SystemCall_Stack = 0x00001827);
     PROVIDE(update_ram_layout = 0x00001841);
     PROVIDE(get_active_ota_bank_addr = 0x000029a1);
+    PROVIDE(Peripheral_Handler = 0x000032fd);
     PROVIDE(RamVectorTableInit = 0x000034c3);
     PROVIDE(RamVectorTableUpdate = 0x000034e9);
     PROVIDE(PPB_BufSwitch = 0x00003545);

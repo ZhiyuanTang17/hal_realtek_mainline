@@ -1,5 +1,6 @@
 SECTIONS
 {
+    PROVIDE(Peripheral_Handler = 0x00003705);
     PROVIDE(flash_nor_set_all_info = 0x0000aa79);
     PROVIDE(swap_buf = 0x0001776f);
     PROVIDE(HardFault_Handler_Rom = 0x0001bf81);
