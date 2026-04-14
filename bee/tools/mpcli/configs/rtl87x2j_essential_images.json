@@ -1,0 +1,35 @@
+{
+    "mptoolconfig": {
+        "port": "",
+        "baud": "1000000",
+        "appimage": {
+            "relativepath": "../../../../zephyr/blobs/bee/rtl87x2j/bin",
+            "file": [
+                {
+                    "id": 0,
+                    "address": "0x2000000",
+                    "name": "bootloader_MP_sdk_0.0.0.0_eb2f06f2-41193522ee5b2ea568883359f4ce8230.bin",
+                    "enable": "1"
+                },
+                {
+                    "id": 0,
+                    "address": "0x2011800",
+                    "name": "OTAHeader_Bank0_1.0.0.1-6739c7390d06c58d02fd7201f5f4d1b0.bin",
+                    "enable": "1"
+                },
+                {
+                    "id": 1,
+                    "address": "0x2011C00",
+                    "name": "sys_patch_MP_sdk_0.0.0.0_16104e62-49128267cd5990b8070b3ade5b1ff1eb.bin",
+                    "enable": "1"
+                },
+                {
+                    "id": 2,
+                    "address": "0x2200400",
+                    "name": "sys_config_MP-50d242150c2d884b6af66848a6d87841.bin",
+                    "enable": "1"
+                }
+            ]
+        }
+    }
+}
