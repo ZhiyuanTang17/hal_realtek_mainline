@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config REALTEK_BEE_PINMUX
-	bool "Realtek Bee MCU pinmux driver"
+	bool "Realtek Bee PINMUX driver"
 	default n
-
 	help
-	  This option enables the pinmux driver for Realtek Bee MCU.
+	  This option enables the PINMUX driver for Realtek Bee.

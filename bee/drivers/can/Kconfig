@@ -2,12 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config REALTEK_BEE_CAN
-	bool "Realtek Bee MCU CAN driver"
+	bool "Realtek Bee CAN driver"
 	default n
-
-	select REALTEK_BEE_RCC
-	select REALTEK_BEE_PINMUX
-	select REALTEK_BEE_NVIC
-
 	help
-	  This option enables the CAN driver for Realtek Bee MCU.
+	  This option enables the CAN driver for Realtek Bee.

@@ -1,6 +1,4 @@
 # Copyright (c) 2026, Realtek Semiconductor Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-zephyr_include_directories(inc)
-
-add_subdirectory(src)
+add_subdirectory_ifdef(CONFIG_REALTEK_BEE_SDHC src)

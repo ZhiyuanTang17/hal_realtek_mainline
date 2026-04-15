@@ -2,12 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config REALTEK_BEE_IR
-	bool "Realtek Bee MCU ir driver"
+	bool "Realtek Bee IR driver"
 	default n
-
-	select REALTEK_BEE_RCC
-	select REALTEK_BEE_PINMUX
-	select REALTEK_BEE_NVIC
-
 	help
-	  This option enables the ir driver for Realtek Bee MCU.
+	  This option enables the IR driver for Realtek Bee.

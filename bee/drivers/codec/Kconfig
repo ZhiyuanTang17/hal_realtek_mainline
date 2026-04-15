@@ -2,12 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config REALTEK_BEE_CODEC
-	bool "Realtek Bee MCU codec driver"
+	bool "Realtek Bee CODEC driver"
 	default n
-
-	select REALTEK_BEE_RCC
-	select REALTEK_BEE_PINMUX
-	select REALTEK_BEE_NVIC
-
 	help
-	  This option enables the codec driver for Realtek Bee MCU.
+	  This option enables the codec driver for Realtek Bee.

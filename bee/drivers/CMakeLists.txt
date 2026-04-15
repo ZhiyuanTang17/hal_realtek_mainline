@@ -1,62 +1,65 @@
 # Copyright (c) 2026, Realtek Semiconductor Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_ADC adc)
+# Macro to add device IC sources and include directories
+# Usage: add_soc_series_subdir(rtl8752h)
+#        add_soc_series_subdir(rtl87x2g)
+#
+# If IC directory contains a CMakeLists.txt, use add_subdirectory.
+# Otherwise, auto-add source files and include directories.
+function(add_soc_series_subdir ic_name)
+    string(TOUPPER ${ic_name} ic_name_upper)
+    set(config_name "CONFIG_SOC_SERIES_${ic_name_upper}")
+    set(ic_dir "${CMAKE_CURRENT_SOURCE_DIR}/${ic_name}")
 
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_UART uart)
+    if(EXISTS "${ic_dir}/CMakeLists.txt")
+        # Use subdirectory's CMakeLists.txt
+        if(${config_name})
+            add_subdirectory(${ic_dir} ${ic_name}_binary)
+        endif()
+    else()
+        # Auto-add sources and include directories
+        file(GLOB ic_sources "${ic_dir}/*.c")
 
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_RCC rcc)
+        if(${config_name})
+            if(ic_sources)
+                zephyr_library_sources(${ic_sources})
+            endif()
+        endif()
 
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_PINMUX pinmux)
+        if(EXISTS ${ic_dir})
+            zephyr_include_directories(${ic_dir})
+        endif()
+    endif()
+endfunction()
 
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_NVIC nvic)
-
-if (CONFIG_REALTEK_BEE_TIM OR CONFIG_REALTEK_BEE_ENHTIM)
-	add_subdirectory(tim)
-endif()
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_RTC rtc)
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_DMA dma)
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_GPIO gpio)
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_I2C i2c)
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_KEYSCAN keyscan)
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_IR ir)
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_I2S i2s)
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_CODEC codec)
-
-if (CONFIG_REALTEK_BEE_AON_QDEC OR CONFIG_REALTEK_BEE_QDEC)
-add_subdirectory(qdec)
-endif()
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_CAN can)
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_SPI spi)
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_SDHC sdhc)
-
-add_subdirectory_ifdef(CONFIG_REALTEK_BEE_USB usb)
-
+add_subdirectory(adc)
 add_subdirectory_ifdef(CONFIG_REALTEK_BEE_BT bluetooth)
-
-if (CONFIG_REALTEK_BEE_CORE_WDT OR CONFIG_REALTEK_BEE_AON_WDT)
-add_subdirectory(wdt)
-endif()
-
-if (CONFIG_REALTEK_BEE_MAC_802154)
-add_subdirectory(mac_802154)
-endif()
-
-add_subdirectory(fmc)
-
+add_subdirectory(can)
+add_subdirectory(codec)
 add_subdirectory(clock)
-
 add_subdirectory(crypto)
+add_subdirectory(dma)
+add_subdirectory(fmc)
+add_subdirectory(gpio)
+add_subdirectory(i2c)
+add_subdirectory(i2s)
+add_subdirectory(ir)
+add_subdirectory(irq)
+add_subdirectory(keyscan)
+add_subdirectory_ifdef(CONFIG_REALTEK_BEE_MAC_802154 mac_802154)
+add_subdirectory(pinmux)
+add_subdirectory(pwm)
+add_subdirectory(qdec)
+add_subdirectory(rcc)
+add_subdirectory(rtc)
+add_subdirectory(sdhc)
+add_subdirectory(spi)
+add_subdirectory(timer)
+add_subdirectory(uart)
+add_subdirectory(usb)
+if (CONFIG_REALTEK_BEE_CORE_WDT OR CONFIG_REALTEK_BEE_AON_WDT)
+    add_subdirectory(wdt)
+endif()
 
 zephyr_include_directories(.)

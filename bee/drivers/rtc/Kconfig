@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config REALTEK_BEE_RTC
-	bool "Realtek Bee MCU rtc driver"
+	bool "Realtek Bee RTC driver"
 	default n
-
-	select REALTEK_BEE_RCC
-	select REALTEK_BEE_PINMUX
-	select REALTEK_BEE_NVIC
-
 	help
-	  This option enables the rtc driver for Realtek Bee MCU.
+	  This option enables the RTC driver for Realtek Bee.
+
+config REALTEK_BEE_GRTC
+	bool "Realtek Bee GRTC driver"
+	default n
+	help
+	  This option enables the GRTC driver for Realtek Bee.

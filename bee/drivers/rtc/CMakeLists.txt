@@ -1,8 +1,6 @@
 # Copyright (c) 2026, Realtek Semiconductor Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-if(NOT DEFINED CONFIG_REALTEK_BEE_USING_RTL876X_DRIVER)
-    zephyr_include_directories(inc)
+if(CONFIG_REALTEK_BEE_RTC OR CONFIG_REALTEK_BEE_GRTC)
+    add_subdirectory(src)
 endif()
-
-add_subdirectory(src)
