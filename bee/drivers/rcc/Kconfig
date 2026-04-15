@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config REALTEK_BEE_RCC
-	bool "Realtek Bee MCU rcc driver"
+	bool "Realtek Bee RCC driver"
 	default n
-
 	help
-	  This option enables the rcc driver for Realtek Bee MCU.
+	  This option enables the RCC driver for Realtek Bee.

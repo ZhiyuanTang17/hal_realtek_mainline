@@ -2,12 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config REALTEK_BEE_ADC
-	bool "Realtek Bee MCU adc driver"
+	bool "Realtek Bee ADC driver"
 	default n
-
-	select REALTEK_BEE_RCC
-	select REALTEK_BEE_PINMUX
-	select REALTEK_BEE_NVIC
-
 	help
-	  This option enables the adc driver for Realtek Bee MCU.
+	  This option enables the ADC driver for Realtek Bee.

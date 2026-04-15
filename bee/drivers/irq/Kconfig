@@ -1,0 +1,8 @@
+# Copyright (c) 2026, Realtek Semiconductor Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_BEE_NVIC
+	bool "Realtek Bee IRQ driver"
+	default n
+	help
+	  This option enables the IRQ driver for Realtek Bee.

@@ -4,6 +4,5 @@
 config REALTEK_BEE_MAC_802154
 	bool "Realtek Bee MCU mac 802154 driver"
 	default n
-
 	help
 	  This option enables the mac 802154 driver for Realtek Bee MCU.

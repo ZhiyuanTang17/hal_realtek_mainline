@@ -2,12 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config REALTEK_BEE_KEYSCAN
-	bool "Realtek Bee MCU keyscan driver"
+	bool "Realtek Bee KEYSCAN driver"
 	default n
-
-	select REALTEK_BEE_RCC
-	select REALTEK_BEE_PINMUX
-	select REALTEK_BEE_NVIC
-
 	help
-	  This option enables the keyscan driver for Realtek Bee MCU.
+	  This option enables the KEYSCAN driver for Realtek Bee.

@@ -1,0 +1,8 @@
+# Copyright (c) 2026, Realtek Semiconductor Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_BEE_PWM
+	bool "Realtek Bee PWM driver"
+	default n
+	help
+	  This option enables the PWM driver for Realtek Bee.

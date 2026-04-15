@@ -1,35 +1,36 @@
 # Copyright (c) 2026, Realtek Semiconductor Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-menu "realtek hal driver"
-rsource "adc/Kconfig"
-rsource "bluetooth/Kconfig"
-rsource "can/Kconfig"
-rsource "codec/Kconfig"
-rsource "dma/Kconfig"
-rsource "gpio/Kconfig"
-rsource "i2c/Kconfig"
-rsource "i2s/Kconfig"
-rsource "ir/Kconfig"
-rsource "keyscan/Kconfig"
-rsource "mac_802154/Kconfig"
-rsource "nvic/Kconfig"
-rsource "pinmux/Kconfig"
-rsource "qdec/Kconfig"
-rsource "rcc/Kconfig"
-rsource "rtc/Kconfig"
-rsource "sdhc/Kconfig"
-rsource "spi/Kconfig"
-rsource "tim/Kconfig"
-rsource "uart/Kconfig"
-rsource "usb/Kconfig"
-rsource "wdt/Kconfig"
+menu "HAL Realtek Bee Drivers"
+orsource "adc/Kconfig"
+orsource "bluetooth/Kconfig"
+orsource "can/Kconfig"
+orsource "codec/Kconfig"
+orsource "dma/Kconfig"
+orsource "gpio/Kconfig"
+orsource "i2c/Kconfig"
+orsource "i2s/Kconfig"
+orsource "ir/Kconfig"
+orsource "irq/Kconfig"
+orsource "keyscan/Kconfig"
+orsource "mac_802154/Kconfig"
+orsource "pinmux/Kconfig"
+orsource "pwm/Kconfig"
+orsource "qdec/Kconfig"
+orsource "rcc/Kconfig"
+orsource "rtc/Kconfig"
+orsource "sdhc/Kconfig"
+orsource "spi/Kconfig"
+orsource "timer/Kconfig"
+orsource "uart/Kconfig"
+orsource "usb/Kconfig"
+orsource "wdt/Kconfig"
 endmenu
 
-config REALTEK_BEE_USING_RTL876X_DRIVER
+config REALTEK_BEE_COMMON_DRIVER
 	bool
 	default y
-	depends on SOC_SERIES_RTL8752H
+	depends on !(SOC_SERIES_RTL8752H || SOC_SERIES_RTL87X2G)
 
 config WRAP_REALTEK_BEE_ADC
 	bool
@@ -88,7 +89,6 @@ config WRAP_REALTEK_BEE_KEYSCAN
 config WRAP_REALTEK_BEE_NVIC
 	bool
 	default y
-	depends on HAL_REALTEK_BEE_NVIC
 	select REALTEK_BEE_NVIC
 
 config WRAP_REALTEK_BEE_PINMUX
@@ -137,13 +137,13 @@ config WRAP_REALTEK_BEE_TIM
 	bool
 	default y
 	depends on HAL_REALTEK_BEE_TIM
-	select REALTEK_BEE_TIM
+	select REALTEK_BEE_TIMER
 
 config WRAP_REALTEK_BEE_ENHTIM
 	bool
 	default y
 	depends on HAL_REALTEK_BEE_ENHTIM
-	select REALTEK_BEE_ENHTIM
+	select REALTEK_BEE_ENHTIMER
 
 config WRAP_REALTEK_BEE_UART
 	bool

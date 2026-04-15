@@ -2,12 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config REALTEK_BEE_I2S
-	bool "Realtek Bee MCU i2s driver"
+	bool "Realtek Bee I2S driver"
 	default n
-
-	select REALTEK_BEE_RCC
-	select REALTEK_BEE_PINMUX
-	select REALTEK_BEE_NVIC
-
 	help
-	  This option enables the i2s driver for Realtek Bee MCU.
+	  This option enables the I2S driver for Realtek Bee.

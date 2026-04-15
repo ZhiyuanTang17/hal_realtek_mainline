@@ -1,0 +1,14 @@
+# Copyright (c) 2026, Realtek Semiconductor Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_BEE_TIMER
+	bool "Realtek Bee TIMER driver"
+	default n
+	help
+	  This option enables the timer driver for Realtek Bee.
+
+config REALTEK_BEE_ENHTIMER
+	bool "Realtek Bee ENHTIMER driver"
+	default n
+	help
+	  This option enables the enhtimer driver for Realtek Bee.
