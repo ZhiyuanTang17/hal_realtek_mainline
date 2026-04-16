@@ -51,9 +51,9 @@ void KeyScan_Init(KEYSCAN_TypeDef *KeyScan, KEYSCAN_InitTypeDef *KeyScan_InitStr
                         | (KeyScan_InitStruct->detecttimerEn)\
                         | (KeyScan_InitStruct->scantimerEn));
     /* time count config */
-    KeyScan->TIMERCR |= ((KeyScan_InitStruct->debouncecnt << 18)\
-                         | (KeyScan_InitStruct->scanInterval << 9)\
-                         | (KeyScan_InitStruct->releasecnt));
+    KeyScan->TIMERCR |= (((KeyScan_InitStruct->debouncecnt & 0x1FF) << 18)\
+                         | ((KeyScan_InitStruct->scanInterval & 0x1FF) << 9)\
+                         | (KeyScan_InitStruct->releasecnt & 0x1FF));
 
     /* Set col map, config which col to work */
     KeyScan->COLCR = ((((1 << KeyScan_InitStruct->colSize) - 1) << 8) \

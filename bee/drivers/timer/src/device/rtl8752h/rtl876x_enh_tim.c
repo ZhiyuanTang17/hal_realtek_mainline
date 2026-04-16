@@ -152,6 +152,7 @@ void ENHTIM_StructInit(ENHTIM_InitTypeDef *ENHTIM_InitStruct)
     ENHTIM_InitStruct->ENHTIM_LatchCountEn[2]       = ENHTIM_LATCH_COUNT_DISABLE;
     ENHTIM_InitStruct->ENHTIM_LatchCountTrigger[2]  = ENHTIM_LATCH_TRIGGER_RISING_EDGE;
     ENHTIM_InitStruct->ENHTIM_LatchCount2Thd        = 3;
+    ENHTIM_InitStruct->ENHTIM_LatchTriggerPad       = P0_0;
     ENHTIM_InitStruct->ENHTIM_TimerGPIOTriggerEn    = DISABLE;
     ENHTIM_InitStruct->ENHTIM_BTGPIOTriggerEn       = DISABLE;
     ENHTIM_InitStruct->ENHTIM_MaxCount              = 0xFFFFFFFE;//range 0x1~0xFFFFFFFE
@@ -177,19 +178,65 @@ void ENHTIM_Cmd(ENHTIM_TypeDef *ENHTIMx, FunctionalState NewState)
     assert_param(IS_ENHTIM_ALL_PERIPH(ENHTIMx));
     assert_param(IS_FUNCTIONAL_STATE(NewState));
 
-    uint32_t enhtim_id = ((uint32_t)ENHTIMx - (uint32_t)ENH_TIM0) / 0X24;
+    uint32_t enhtim_id = ((uint32_t)ENHTIMx - (uint32_t)ENH_TIM0) / 0x24;
+    uint32_t current_clock_reg = CLK_SOURCE_REG_2;
+    uint32_t clock_mask = (enhtim_id == 0) ? (0x07 << 25) : (0x07 << 28);
 
     if (NewState != DISABLE)
     {
-        /* Enable the TIM Counter */
+        /* Enable the ENHTIM Counter */
         ENH_TIM_SHARE->CMD |= BIT(enhtim_id);
     }
     else
     {
-        /* Disable the TIM Counter */
+        /* Disable the ENHTIM Counter */
         ENH_TIM_SHARE->CMD &= ~(BIT(enhtim_id));
+
+        if ((current_clock_reg & clock_mask) != 0)
+        {
+            uint32_t timer_setting = (ENHTIMx->CR) & 0x0F; /* Include timer mode, pwm enable, pwm polarity */
+            uint32_t timeout_int = (ENH_TIM_SHARE->INT_CMD) & BIT(enhtim_id);
+            uint32_t latch_int_full = (ENH_TIM_SHARE->LC_INT_CMD0) & BIT(24 + enhtim_id);
+            uint32_t latch_int_th = (ENH_TIM_SHARE->LC_INT_CMD2) & BIT(24 + enhtim_id);
+
+            /* Pre disable interrupt to avoid trigger interrupt.
+            * - Disable the ENHTIM PWM
+            * - Disable the ENHTIM timeout interrupt
+            * - Disable the ENHTIM latch count interrupt
+            * - Set ENHTIM mode to free-run mode
+            */
+            ENHTIMx->CR &= ~ENHTIM_PWM_ENABLE;
+            ENH_TIM_SHARE->INT_CMD &= ~BIT(enhtim_id);
+            ENH_TIM_SHARE->LC_INT_CMD0 &= ~BIT(enhtim_id + 24);
+            ENH_TIM_SHARE->LC_INT_CMD2 &= ~BIT(enhtim_id + 24);
+            ENHTIMx->CR &= ~0x03;
+
+            /* Set ENHTIM clock divider to TIM_CLOCK_DIV_1 */
+            E_TIM_NUM timx = (enhtim_id == 0) ? TIMENH_CLK_0 : TIMENH_CLK_1;
+            RCC_TIMClkDivConfig(timx, TIM_CLOCK_DIV_1);
+
+            /* Enable the ENHTIM Counter for above settings succsivae */
+            ENH_TIM_SHARE->CMD |= BIT(enhtim_id);
+
+            /* Disable the ENHTIM Counter */
+            ENH_TIM_SHARE->CMD &= ~BIT(enhtim_id);
+
+            /* Restore ENHTIM for above settings
+            * - Restore ENHTIM clock divider
+            * - Restore ENHTIM PWM settings
+            * - Restore ENHTIM timer mode
+            * - Restore ENHTIM timeout interrupt
+            * - Restore ENHTIM latch count interrupt
+            */
+            CLK_SOURCE_REG_2 = current_clock_reg;
+            ENHTIMx->CR |= timer_setting;
+            ENH_TIM_SHARE->INT_CMD |= timeout_int;
+            ENH_TIM_SHARE->LC_INT_CMD0 |= latch_int_full;
+            ENH_TIM_SHARE->LC_INT_CMD2 |= latch_int_th;
+        }
     }
 }
+
 
 /**
   * @brief  Mask or unmask the latch count2 fifo interrupt.

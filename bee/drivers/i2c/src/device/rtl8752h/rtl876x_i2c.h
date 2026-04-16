@@ -871,7 +871,7 @@ __STATIC_INLINE void I2C_GDMACmd(I2C_TypeDef *I2Cx, uint16_t I2C_GDMAReq, Functi
 
 typedef struct
 {
-    uint32_t i2c_reg[20];
+    uint32_t i2c_reg[18];
 } I2CStoreReg_TypeDef;
 
 #ifdef __cplusplus
