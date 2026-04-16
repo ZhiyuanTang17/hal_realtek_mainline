@@ -3,3 +3,4 @@
 
 add_soc_series_subdir(rtl8752h)
 add_soc_series_subdir(rtl87x2g)
+add_soc_series_subdir(rtl87x2j)
