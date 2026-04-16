@@ -285,4 +285,5 @@ SECTIONS
     PROVIDE(patch_osif_os_timer_pend_function_call = 0x00201778);
     PROVIDE(patch_osif_os_timer_get_auto_reload = 0x0020177c);
     PROVIDE(patch_osif_os_timer_is_timer_active = 0x00201780);
+    PROVIDE(SystemCall = 0x0000181b);
 }

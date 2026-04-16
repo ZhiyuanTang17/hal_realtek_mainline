@@ -25,7 +25,6 @@ extern "C" {
  *============================================================================*/
 #include "rtl876x.h"
 #include "rtl876x_alias.h"
-#include "platform_utils.h"
 #include "adc_lib.h"
 #include "trace.h"
 
@@ -38,7 +37,6 @@ extern "C" {
 #define ASSERT(e) \
     do { \
         if(!(e)) { \
-            platform_delay_ms(1000); \
             DBG_DIRECT("(" #e ") assert failed! Func: %s. Line: %d.", __func__, __LINE__); \
             DBG_DIRECT("(" #e ") assert failed! Func: %s. Line: %d.", __func__, __LINE__); \
             *(volatile int *)0x1 = 0; \

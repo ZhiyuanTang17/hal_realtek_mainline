@@ -11,7 +11,8 @@
 #define EFUSE_ON_RAM_BASE             0x00200f81UL
 #define EFUSE_FT_VER_OFFSET              0x1C8
 
-extern void pmu_request_ldo_audio_ref_call(bool isEnable);
+extern void SystemCall(uint32_t opcode, uint32_t parm);
+extern volatile void (*platform_delay_ms)(uint32_t t);
 
 /**
   * @brief  Deinitializes the ADC peripheral registers to their default reset values(turn off ADC clock).
@@ -24,7 +25,7 @@ void ADC_DeInit(ADC_TypeDef *ADCx)
     assert_param(IS_ADC_PERIPH(ADCx));
 
     /* ADC PowerOff */
-    pmu_request_ldo_audio_ref_call(false);
+    SystemCall(0x0A, DISABLE);
 
     RCC_PeriphClockCmd(APBPeriph_ADC, APBPeriph_ADC_CLOCK, DISABLE);
 
@@ -105,7 +106,7 @@ void ADC_Init(ADC_TypeDef *ADCx, ADC_InitTypeDef *ADC_InitStruct)
     }
 
     /* hw_pd of LDO, for low leakage purpose */
-    pmu_request_ldo_audio_ref_call(true);
+    SystemCall(0x0A, ENABLE);
 
     /* Set power mode first */
     ADCx->PWRDLY |= (((ADC_InitStruct->ADC_DataLatchDly & 0x7) << 6)  |

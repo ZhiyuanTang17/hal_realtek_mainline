@@ -801,7 +801,7 @@ __STATIC_INLINE void GPIO_Debounce_Time(uint32_t DebounceTime)
 }
 
 __STATIC_INLINE void GPIO_SetPolarity(uint32_t GPIO_Pin,
-                      GPIOIT_PolarityType int_type)
+                                      GPIOIT_PolarityType int_type)
 {
     /* Check the parameters */
     assert_param(IS_GPIO_PIN(GPIO_Pin));
@@ -815,7 +815,8 @@ __STATIC_INLINE void GPIO_SetPolarity(uint32_t GPIO_Pin,
     {
         GPIO->INTPOLARITY = (GPIO->INTPOLARITY & (~GPIO_Pin))
                             | GPIO_Pin;
-    }}
+    }
+}
 
 /** End of GPIO_Exported_Functions
   * \}

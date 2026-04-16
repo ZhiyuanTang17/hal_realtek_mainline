@@ -463,14 +463,13 @@ typedef struct
     __IO uint32_t IC_CON;
     __IO uint32_t IC_TAR;
     __IO uint32_t IC_SAR;
-    __IO uint32_t IC_HS_MADDR;
+    __IO uint32_t RSVD_0C;
     __IO uint32_t IC_DATA_CMD;
     __IO uint32_t IC_SS_SCL_HCNT;
     __IO uint32_t IC_SS_SCL_LCNT;
     __IO uint32_t IC_FS_SCL_HCNT;
     __IO uint32_t IC_FS_SCL_LCNT;
-    __IO uint32_t IC_HS_SCL_HCNT;
-    __IO uint32_t IC_HS_SCL_LCNT;
+    __IO uint32_t RSVD_24[2];
     __I uint32_t IC_INTR_STAT;
     __IO uint32_t IC_INTR_MASK;
     __I uint32_t IC_RAW_INTR_STAT;
@@ -500,6 +499,7 @@ typedef struct
     __IO uint32_t IC_SDA_SETUP;
     __IO uint32_t IC_ACK_GENERAL_CALL;
     __IO uint32_t IC_ENABLE_STATUS;
+    __IO uint32_t IC_FS_SPKLEN;
 } I2C_TypeDef;
 
 /* ================================================================================ */

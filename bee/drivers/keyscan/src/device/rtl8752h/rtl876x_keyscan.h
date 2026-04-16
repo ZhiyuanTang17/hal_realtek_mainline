@@ -475,15 +475,15 @@ void KeyScan_FilterDataConfig(KEYSCAN_TypeDef *KeyScan, uint16_t data,
  * }
  * \endcode
  */
-__STATIC_INLINE void KeyScan_debounceConfig(KEYSCAN_TypeDef *KeyScan, uint8_t time,
+__STATIC_INLINE void KeyScan_debounceConfig(KEYSCAN_TypeDef *KeyScan, uint16_t time,
                                             FunctionalState NewState)
 {
     /* Check the parameters */
     assert_param(IS_KeyScan_PERIPH(KeyScan));
     assert_param(IS_FUNCTIONAL_STATE(NewState));
 
-    KeyScan->TIMERCR &= ~((0xff << 18) | BIT31);
-    KeyScan->TIMERCR |= ((NewState << 31) | time << 18);
+    KeyScan->TIMERCR &= ~((0x1ff << 18) | BIT31);
+    KeyScan->TIMERCR |= ((NewState << 31) | (time & 0x1FF) << 18);
 
 }
 
