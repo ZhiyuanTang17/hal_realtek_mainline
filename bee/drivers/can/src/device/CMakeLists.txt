@@ -2,3 +2,4 @@
 # SPDX-License-Identifier: Apache-2.0
 
 add_soc_series_subdir(rtl87x2g)
+add_soc_series_subdir(rtl87x2j)
