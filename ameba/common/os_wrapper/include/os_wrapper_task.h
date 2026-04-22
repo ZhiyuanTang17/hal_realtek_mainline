@@ -30,19 +30,19 @@ int rtos_sched_start(void);
 
 /**
  * @brief  Stop os kernel scheduler
- * @retval return RTK_SUCCESS Only
+ * @retval RTK_SUCCESS(0) / RTK_FAIL(-1)
  */
 int rtos_sched_stop(void);
 
 /**
  * @brief  Suspend os kernel scheduler
- * @retval return RTK_SUCCESS Only
+ * @retval RTK_SUCCESS(0) / RTK_FAIL(-1)
  */
 int rtos_sched_suspend(void);
 
 /**
  * @brief  Resume os kernel scheduler
- * @retval return RTK_SUCCESS Only
+ * @retval RTK_SUCCESS(0) / RTK_FAIL(-1)
  */
 int rtos_sched_resume(void);
 
@@ -80,27 +80,27 @@ int rtos_task_create(rtos_task_t *pp_handle, const char *p_name, rtos_task_funct
 /**
  * @brief  Delete os level task routine.
  * @param  p_handle: Task handle. If a null pointer is passed, the task itself is deleted.
- * @retval return RTK_SUCCESS Only
+ * @retval RTK_SUCCESS(0) / RTK_FAIL(-1)
  */
 int rtos_task_delete(rtos_task_t p_handle);
 
 /**
  * @brief  Suspend os level task routine.
  * @param  p_handle: Task handle.
- * @retval return RTK_SUCCESS Only
+ * @retval RTK_SUCCESS(0) / RTK_FAIL(-1)
  */
 int rtos_task_suspend(rtos_task_t p_handle);
 
 /**
  * @brief  Resume os level task routine.
  * @param  p_handle: Task handle.
- * @retval return RTK_SUCCESS Only
+ * @retval RTK_SUCCESS(0) / RTK_FAIL(-1)
  */
 int rtos_task_resume(rtos_task_t p_handle);
 
 /**
  * @brief  Yield current os level task routine.
- * @retval return RTK_SUCCESS Only
+ * @retval RTK_SUCCESS(0) / RTK_FAIL(-1)
  */
 int rtos_task_yield(void);
 
@@ -121,7 +121,7 @@ uint32_t rtos_task_priority_get(rtos_task_t p_handle);
  * @brief  Set os level task routine priority.
  * @param  p_handle: Task handle.
  * @param  priority: The priority at which the task should run (higher value, higher priority)
- * @retval return RTK_SUCCESS Only
+ * @retval RTK_SUCCESS(0) / RTK_FAIL(-1)
  */
 int rtos_task_priority_set(rtos_task_t p_handle, uint16_t priority);
 

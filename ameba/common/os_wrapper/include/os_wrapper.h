@@ -10,11 +10,11 @@
 /**
  * @brief  Necessary headers
  */
+#include "platform_autoconf.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 
-#include "platform_autoconf.h"
 #include "ameba.h"
 #ifdef __ZEPHYR__
 #include <zephyr/kernel.h>
@@ -41,8 +41,7 @@ extern "C" {
 /**
  * @brief  General macro definition
  */
-
-#define RTOS_MAX_DELAY   0xFFFFFFFFUL
-#define RTOS_MAX_TIMEOUT 0xFFFFFFFFUL
+#define RTOS_MAX_DELAY    				0xFFFFFFFFUL
+#define RTOS_MAX_TIMEOUT    			0xFFFFFFFFUL
 
 #endif

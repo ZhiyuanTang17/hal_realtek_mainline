@@ -100,7 +100,7 @@ int rtos_timer_stop(rtos_timer_t p_handle, uint32_t wait_ms);
  * @brief  changes the period of a timer that was previously created using a call
  *         to rtos_timer_create.
  * @param  p_handle: The handle of the created timer
- * @param  interval_ms: The new period for xTimer.
+ * @param  interval_ms: The new period for the timer.
  * @param  wait_ms: Specifies the time that the calling task should be held in the Blocked state to
  *                  wait for the change command to be successfully sent to the timer command queue.
  * @retval The status is RTK_SUCCESS or RTK_FAIL

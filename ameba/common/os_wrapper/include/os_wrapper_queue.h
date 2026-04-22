@@ -19,9 +19,9 @@ typedef void *rtos_queue_t;
  *          rtos_queue_t queue_handle;
  *          rtos_queue_create(&queue_handle, 5, sizeof(uint32_t));
  * Send:
- *          rtos_queue_send(queue_handle, p_msg, portMAX_DELAY);
+ *          rtos_queue_send(queue_handle, p_msg, RTOS_MAX_DELAY);
  * Receive:
- *          rtos_queue_receive(queue_handle, p_msg, portMAX_DELAY);
+ *          rtos_queue_receive(queue_handle, p_msg, RTOS_MAX_DELAY);
  * Delete:
  *          rtos_queue_delete(queue_handle);
  * @param  pp_handle: The handle itself is a pointer, and the pp_handle means a pointer to
