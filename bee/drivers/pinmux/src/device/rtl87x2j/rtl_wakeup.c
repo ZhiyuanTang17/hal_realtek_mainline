@@ -655,5 +655,3 @@ void System_RegisterPadWakeupCallback(uint8_t Pin_Num, P_PAD_CBACK Callback, uin
         }
     }
 }
-
-
