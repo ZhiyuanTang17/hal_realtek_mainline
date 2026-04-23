@@ -28,6 +28,7 @@
 #define APP_RAM_TEXT_SECTION __ramfunc
 #define RAM_FUNCTION         __ramfunc
 #define DATA_RAM_FUNCTION     __ramfunc
+#define RAM_TEXT_SECTION __ramfunc
 
 #define APP_FLASH_HEADER
 #define APP_FLASH_HEADER_EXT
