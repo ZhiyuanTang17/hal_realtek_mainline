@@ -85,3 +85,4 @@ patch_syscall_bt_controller = 0x200199f4 ;
 patch_syscall_bt_host_common = 0x200199f8 ;
 patch_syscall_bt_host_le = 0x200199fc ;
 patch_syscall_platform = 0x20019a00 ;
+patch_ram_vector_table_update = 0x200199e8;

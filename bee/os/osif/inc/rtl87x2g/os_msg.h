@@ -28,24 +28,18 @@ extern "C" {
  *
  */
 
+bool os_msg_queue_create_intern(void **pp_handle, const char *p_name, uint32_t msg_num,
+                                uint32_t msg_size);
 
-extern bool (*os_msg_queue_create_intern)(void **pp_handle, const char *p_name, uint32_t msg_num,
-                                          uint32_t msg_size,
-                                          const char *p_func, uint32_t file_line);
+bool os_msg_queue_delete_intern(void *p_handle);
 
-extern bool (*os_msg_queue_delete_intern)(void *p_handle, const char *p_func, uint32_t file_line);
+bool os_msg_queue_peek_intern(void *p_handle, uint32_t *p_msg_num);
 
-extern bool (*os_msg_queue_peek_intern)(void *p_handle, uint32_t *p_msg_num,
-                                        const char *p_func, uint32_t file_line);
+bool os_msg_send_intern(void *p_handle, void *p_msg, uint32_t wait_ms);
 
-extern bool (*os_msg_send_intern)(void *p_handle, void *p_msg, uint32_t wait_ms,
-                                  const char *p_func, uint32_t file_line);
+bool os_msg_recv_intern(void *p_handle, void *p_msg, uint32_t wait_ms);
 
-extern bool (*os_msg_recv_intern)(void *p_handle, void *p_msg, uint32_t wait_ms,
-                                  const char *p_func, uint32_t file_line);
-
-extern bool (*os_msg_peek_intern)(void *p_handle, void *p_msg, uint32_t wait_ms,
-                                  const char *p_func, uint32_t file_line);
+bool os_msg_peek_intern(void *p_handle, void *p_msg, uint32_t wait_ms);
 
 /*============================================================================*
  *                              Functions

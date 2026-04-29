@@ -262,3 +262,5 @@ platform_pm_feature_cfg = 0x2000129c ;
 trace_mask = 0x200012cc ;
 unit_clock_freq = 0x200012d4 ;
 patch_ram_vector_table_update = 0x200199e8 ;
+wakeup_init = 0x20000888 ;
+port_pm_init = 0x0200acb5 ;

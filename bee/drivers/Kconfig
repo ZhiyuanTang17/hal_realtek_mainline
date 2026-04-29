@@ -62,6 +62,12 @@ config WRAP_REALTEK_BEE_GPIO
 	depends on HAL_REALTEK_BEE_GPIO
 	select REALTEK_BEE_GPIO
 
+config WRAP_REALTEK_BEE_GRTC
+	bool
+	default y
+	depends on HAL_REALTEK_BEE_GRTC
+	select REALTEK_BEE_GRTC
+
 config WRAP_REALTEK_BEE_I2C
 	bool
 	default y
