@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-bool (*patch_ram_vector_table_update)(int irqn, IRQ_Fun isr_handler, bool *ret);
+extern bool (*patch_ram_vector_table_update)(int irqn, IRQ_Fun isr_handler, bool *ret);
 extern void default_handler(void);
 
 extern void (*wakeup_init)(void);
