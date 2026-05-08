@@ -115,6 +115,12 @@ config WRAP_REALTEK_BEE_QDEC
 	depends on HAL_REALTEK_BEE_QDEC
 	select REALTEK_BEE_QDEC
 
+config WRAP_REALTEK_BEE_LPQDEC
+	bool
+	default y
+	depends on HAL_REALTEK_BEE_LPQDEC
+	select REALTEK_BEE_LPQDEC
+
 config WRAP_REALTEK_BEE_RCC
 	bool
 	default y
