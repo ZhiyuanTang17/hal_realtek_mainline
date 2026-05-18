@@ -1,0 +1,168 @@
+manifest:
+
+    remotes:
+      - name: origin
+        url-base: ssh://cn4soc.rtkbf.com:29418
+
+    defaults:
+      remote: origin
+
+    projects:
+      - name: sdk
+        repo-path: HoneyRepo/sdk
+        revision: master 537c47237020f64f6d466f08042c07526a663e52
+        path: realtek
+
+      - name: bin-rtl87x2j
+        repo-path: HoneyRepo/bin/rtl87x2j
+        revision: master
+        path: realtek/bin/rtl87x2j
+
+      - name: driver
+        repo-path: HoneyRepo/driver
+        revision: master 21b17c5363d2be394633d6a0655c7da7df1026e9
+        path: realtek/driver
+        groups:
+            - driver
+
+      - name: fmc
+        repo-path: HoneyRepo/driver/fmc
+        revision:  master 92819b9720d8adc86d311651bef208885f7f1662
+        path: realtek/driver/fmc
+        groups:
+            - fmc
+
+      - name: crypto
+        repo-path: HoneyRepo/driver/crypto
+        revision:  master 045a9393feb99bf1733680a5a7d6969899070556
+        path: realtek/driver/crypto
+        groups:
+            - crypto
+
+      - name: usb
+        repo-path: HoneyRepo/driver/usb
+        revision:  master
+        path: realtek/subsys/usb
+        groups:
+            - usb
+
+      - name: kernel
+        repo-path: HoneyRepo/kernel
+        revision:  refs/heads/bee5-v0 4fb270cb2902250c647193ff55d83bcba57b146f
+        path: realtek/kernel
+        groups:
+            - kernel
+
+      - name: soc
+        repo-path: HoneyRepo/soc
+        revision:  refs/heads/bee5 f4b790762cc8d5959f0fbca05530daab3f7f6e7a + aca08d523a6cb2117c33210593fe9becde2cafa5(zephyr support)
+        path: realtek/soc
+        groups:
+            - soc
+
+      - name: phy
+        repo-path: HoneyRepo/PHY/Dev
+        revision:  refs/tags/PHY-v2.2.0
+        path: realtek/soc/phy/common
+        groups:
+            - phy
+
+      - name: pm
+        repo-path: HoneyRepo/PM/Dev
+        revision:  refs/tags/PM-v3.0.0
+        path: realtek/soc/pm/common
+        groups:
+            - pm
+
+      - name: romdriver
+        repo-path: HoneyRepo/driver
+        revision: refs/heads/rom-driver-bee5-v0  8b165c8f59c2dcc972a8df25fedc1b5bc143da06 tag: bee5-driver-v0.0.5-bl
+        path: realtek/soc/driver
+        groups:
+            - romdriver
+
+      - name: btcontroller
+        repo-path: HoneyRepo/lowerstack
+        revision: lowerstack-dev-bee5-v0.0  831ea6025f3f0b03fed36f6fd20eeb540c134dcc
+        path: realtek/subsys/bluetooth/bt_controller/src
+        groups:
+            - btcontroller
+
+      - name: btcontrollerImage
+        repo-path: HoneyRepo/lowerimage
+        revision: master 28e2167248e1a835ba363760a3f2483a525d95b8
+        path: realtek/subsys/bluetooth/bt_controller/image
+        groups:
+            - btcontrollerImage
+
+      - name: patch
+        repo-path: HoneyRepo/syspatch
+        revision: bee5-master-v0.0 8e407b0c89cd07de31a9e4d0244eaaa54bbb257e
+        path: realtek/patch
+        groups:
+            - patch
+
+      - name: PHYpatch
+        repo-path: HoneyRepo/PHY/Patch
+        revision: phy-patch-v2.2.0 a5f8527f12298fb78e81ef14d366d7ac961f2ecc
+        path: realtek/patch/phy/common
+        groups:
+            - PHYpatch
+
+      - name: PMpatch
+        repo-path: HoneyRepo/PM/Patch
+        revision: pm-patch-v3.0.0 67aca5acf00fcd7f98336e6cbe4e8c70f7eea02f
+        path: realtek/patch/pm/common
+        groups:
+            - PMpatch
+
+      - name: lowerpatch
+        repo-path: HoneyRepo/lowerpatch
+        revision: stack-patch-v4.0
+        path: realtek/patch/bt_controller_patch
+        groups:
+            - lowerpatch
+
+      - name: bthostpatch
+        repo-path: HoneyRepo/btimprove/bt-host-patch
+        revision: master
+        path: realtek/patch/bt_host_patch
+        groups:
+            - bthostpatch
+
+      - name: jenkinsScript
+        repo-path: HoneyRepo/build
+        revision: v2
+        path: .jenkins
+        groups:
+            - jenkinsScript
+
+      - name: sample-peripheral
+        repo-path: HoneyRepo/samples/peripheral
+        revision: refs/heads/bee5
+        path: realtek/sample/peripheral
+        groups:
+            - sample-peripheral
+
+      - name: application
+        repo-path: HoneyRepo/application
+        revision: master
+        path: realtek/application
+        groups:
+            - application
+
+      - name: sample
+        repo-path: HoneyRepo/sample
+        revision: master
+        path: realtek/sample
+        groups:
+            - sample
+
+
+    self:
+        path: manifest
+        west-commands: west_commands_extention/west-commands.yml
+        userdata:
+            owner: grace_guan
+
+    group-filter: [-bthost,-protected]

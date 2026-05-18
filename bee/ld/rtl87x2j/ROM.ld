@@ -42,4 +42,6 @@ SECTIONS
     PROVIDE(void_ptr_function = 0x00003d45);
     PROVIDE(image_integrity_check = 0x20019870);
     PROVIDE(patch_ram_vector_table_update = 0x200199e8);
+    PROVIDE(platform_random = 0x000032d1);
+    PROVIDE(deinit_true_random_generator = 0x000017c5);
 }

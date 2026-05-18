@@ -9,7 +9,15 @@
 #include "mem_types.h"
 #include "os_mem.h"
 #include "os_sync.h"
+#if defined(CONFIG_SOC_SERIES_RTL87X2J)
+#include "soc_log.h"
+#define BT_SNOOP_UP(length, snoop)   BT_SNOOP_UP_TRACE(0, length, snoop)
+#define BT_SNOOP_DOWN(length, snoop) BT_SNOOP_DOWN_TRACE(0, length, snoop)
+#else
 #include "trace.h"
+#define BT_SNOOP_UP(length, snoop)   BT_SNOOP_UP_TRACE(length, snoop)
+#define BT_SNOOP_DOWN(length, snoop) BT_SNOOP_DOWN_TRACE(length, snoop)
+#endif
 
 #define F_RTK_BT_HCI_H2C_POOL_DEBUG_LOG 0
 #define F_RTK_BT_HCI_DRIVER_DEBUG_LOG   0
@@ -444,7 +452,7 @@ bool rtl_bt_hci_cb(T_HCI_IF_EVT evt, bool status, uint8_t *p_buf, uint32_t len)
             {
                 if (p_rtl_bt_hci_cb)
                 {
-                    BT_SNOOP_UP_TRACE(len, p_buf);
+                    BT_SNOOP_UP(len, p_buf);
 
                     result = (*p_rtl_bt_hci_cb)(BT_HCI_EVT_DATA_IND, status, p_buf, len);
                     break;
@@ -457,7 +465,7 @@ bool rtl_bt_hci_cb(T_HCI_IF_EVT evt, bool status, uint8_t *p_buf, uint32_t len)
                     if (len > HCI_RX_ACL_BUF_OFFSET)
                     {
                         p_buf[HCI_RX_ACL_BUF_OFFSET] = H4_ACL;
-                        BT_SNOOP_UP_TRACE(len - HCI_RX_ACL_BUF_OFFSET, p_buf + HCI_RX_ACL_BUF_OFFSET);
+                        BT_SNOOP_UP(len - HCI_RX_ACL_BUF_OFFSET, p_buf + HCI_RX_ACL_BUF_OFFSET);
 
                         result = (*p_rtl_bt_hci_cb)(BT_HCI_EVT_DATA_IND, status, p_buf + HCI_RX_ACL_BUF_OFFSET,
                                                     len - HCI_RX_ACL_BUF_OFFSET);
@@ -473,7 +481,7 @@ bool rtl_bt_hci_cb(T_HCI_IF_EVT evt, bool status, uint8_t *p_buf, uint32_t len)
                     if (len > HCI_RX_ISO_BUF_OFFSET)
                     {
                         p_buf[HCI_RX_ISO_BUF_OFFSET] = H4_ISO;
-                        BT_SNOOP_UP_TRACE(len - HCI_RX_ISO_BUF_OFFSET, p_buf + HCI_RX_ISO_BUF_OFFSET);
+                        BT_SNOOP_UP(len - HCI_RX_ISO_BUF_OFFSET, p_buf + HCI_RX_ISO_BUF_OFFSET);
 
                         result = (*p_rtl_bt_hci_cb)(BT_HCI_EVT_DATA_IND, status, p_buf + HCI_RX_ISO_BUF_OFFSET,
                                                     len - HCI_RX_ISO_BUF_OFFSET);
@@ -522,16 +530,16 @@ bool rtl_bt_hci_send(T_RTL_BT_HCI_BUF hci_buf)
     {
         if (hci_buf.p_h2c_buf[0] == H4_CMD)
         {
-            BT_SNOOP_DOWN_TRACE(hci_buf.h2c_buf_size, hci_buf.p_h2c_buf);
+            BT_SNOOP_DOWN(hci_buf.h2c_buf_size, hci_buf.p_h2c_buf);
         }
         else if (hci_buf.p_h2c_buf[0] == H4_ACL)
         {
-            BT_SNOOP_DOWN_TRACE(hci_buf.h2c_buf_size - HCI_TX_ACL_RSVD_SIZE,
+            BT_SNOOP_DOWN(hci_buf.h2c_buf_size - HCI_TX_ACL_RSVD_SIZE,
                                 hci_buf.p_h2c_buf + HCI_TX_ACL_RSVD_SIZE);
         }
         else if (hci_buf.p_h2c_buf[0] == H4_ISO)
         {
-            BT_SNOOP_DOWN_TRACE(hci_buf.h2c_buf_size - HCI_TX_ISO_RSVD_SIZE,
+            BT_SNOOP_DOWN(hci_buf.h2c_buf_size - HCI_TX_ISO_RSVD_SIZE,
                                 hci_buf.p_h2c_buf + HCI_TX_ISO_RSVD_SIZE);
         }
 #if F_RTK_BT_HCI_DRIVER_DEBUG_LOG
