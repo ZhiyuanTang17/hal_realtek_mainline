@@ -1,5 +1,6 @@
 SECTIONS
 {
+    PROVIDE(srand_bl = 0x0200063d);
     PROVIDE(GTC_CounterToUs = 0x0200113d);
     PROVIDE(GTC_UsToCounter = 0x0200117d);
     PROVIDE(get_soc_rtl_num = 0x020065dd);
@@ -114,4 +115,3 @@ SECTIONS
     PROVIDE(os_interface = 0x20002a1c);
     PROVIDE(os_pm_feature_cfg = 0x20002b3c);
 }
-srand = 0x0200063d;
