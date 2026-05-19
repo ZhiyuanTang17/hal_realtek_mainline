@@ -31,10 +31,10 @@ void NVIC_Init(NVIC_InitTypeDef *NVIC_InitStruct)
     /* Check the parameters */
     assert_param(IS_FUNCTIONAL_STATE(NVIC_InitStruct->NVIC_IRQChannelCmd));
 
-    if (NVIC_InitStruct->NVIC_IRQChannel >= PeriphGPIO_First_IRQn &&
-        NVIC_InitStruct->NVIC_IRQChannel <= PeriphGPIO_Last_IRQn ||
-        NVIC_InitStruct->NVIC_IRQChannel >= PeriphTIMER_First_IRQn &&
-        NVIC_InitStruct->NVIC_IRQChannel <= PeriphTIMER_Last_IRQn)
+    if ((NVIC_InitStruct->NVIC_IRQChannel >= PeriphGPIO_First_IRQn &&
+         NVIC_InitStruct->NVIC_IRQChannel <= PeriphGPIO_Last_IRQn) ||
+        (NVIC_InitStruct->NVIC_IRQChannel >= PeriphTIMER_First_IRQn &&
+         NVIC_InitStruct->NVIC_IRQChannel <= PeriphTIMER_Last_IRQn))
     {
         NVIC_InitStruct->NVIC_IRQChannel = GET_FIRST_IRQn(NVIC_InitStruct->NVIC_IRQChannel);
     }
