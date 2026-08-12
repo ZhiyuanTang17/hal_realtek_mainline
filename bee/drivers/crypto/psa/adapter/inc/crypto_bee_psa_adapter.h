@@ -24,12 +24,20 @@ extern "C" {
 #endif
 
 #define BEE_AES_BLOCK_SIZE 16U
+#define BEE_ECC_P256_WORDS 8U
+
+struct bee_ecc_point {
+  uint32_t x[BEE_ECC_P256_WORDS];
+  uint32_t y[BEE_ECC_P256_WORDS];
+  uint32_t z[BEE_ECC_P256_WORDS];
+};
 
 enum bee_crypto_status {
   BEE_CRYPTO_SUCCESS = 0,
   BEE_CRYPTO_ERROR_INVALID_ARGUMENT = -1,
   BEE_CRYPTO_ERROR_HARDWARE = -2,
   BEE_CRYPTO_ERROR_SYNC = -3,
+  BEE_CRYPTO_ERROR_NOT_SUPPORTED = -4,
 };
 
 int bee_crypto_init(void);
@@ -39,6 +47,25 @@ void bee_crypto_unlock(void);
 int bee_aes_hw_crypt_block(const uint8_t *key, size_t key_len,
                            T_HW_AES_MODE mode, const uint8_t *in, uint8_t *out,
                            const uint8_t *iv, bool decrypt);
+
+int bee_ecc_p256_enable(void);
+void bee_ecc_p256_disable(void);
+int bee_ecc_p256_mod_prepare(const uint32_t modulus[BEE_ECC_P256_WORDS]);
+int bee_ecc_p256_mod_reduce(uint32_t value[BEE_ECC_P256_WORDS]);
+int bee_ecc_p256_mod_mul(const uint32_t left[BEE_ECC_P256_WORDS],
+                         const uint32_t right[BEE_ECC_P256_WORDS],
+                         uint32_t result[BEE_ECC_P256_WORDS]);
+int bee_ecc_p256_mod_add(const uint32_t left[BEE_ECC_P256_WORDS],
+                         const uint32_t right[BEE_ECC_P256_WORDS],
+                         uint32_t result[BEE_ECC_P256_WORDS]);
+int bee_ecc_p256_mod_inv(const uint32_t value[BEE_ECC_P256_WORDS],
+                         uint32_t result[BEE_ECC_P256_WORDS]);
+int bee_ecc_p256_mul(const uint32_t scalar[BEE_ECC_P256_WORDS],
+                     const struct bee_ecc_point *point,
+                     struct bee_ecc_point *result);
+int bee_ecc_p256_add(const struct bee_ecc_point *left,
+                     const struct bee_ecc_point *right,
+                     struct bee_ecc_point *result);
 
 #ifdef __cplusplus
 }

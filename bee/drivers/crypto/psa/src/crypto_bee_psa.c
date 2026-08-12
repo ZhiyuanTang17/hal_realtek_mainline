@@ -9,6 +9,20 @@
 #include <string.h>
 
 #define BEE_PSA_CCM_BLOCK_SIZE 16U
+#define BEE_PSA_P256_BYTES 32U
+#define BEE_PSA_P256_SIGNATURE_BYTES (2U * BEE_PSA_P256_BYTES)
+
+static const uint32_t bee_psa_p256_order[BEE_ECC_P256_WORDS] = {
+    0xfc632551U, 0xf3b9cac2U, 0xa7179e84U, 0xbce6faadU,
+    0xffffffffU, 0xffffffffU, 0x00000000U, 0xffffffffU,
+};
+static const struct bee_ecc_point bee_psa_p256_generator = {
+    .x = {0xd898c296U, 0xf4a13945U, 0x2deb33a0U, 0x77037d81U, 0x63a440f2U,
+          0xf8bce6e5U, 0xe12c4247U, 0x6b17d1f2U},
+    .y = {0x37bf51f5U, 0xcbb64068U, 0x6b315eceU, 0x2bce3357U, 0x7c0f9e16U,
+          0x8ee7eb4aU, 0xfe1a7f9bU, 0x4fe342e2U},
+    .z = {1U},
+};
 
 struct bee_psa_ccm_context {
   const uint8_t *key;
@@ -28,10 +42,325 @@ static psa_status_t bee_psa_status(int status) {
   if (status == BEE_CRYPTO_SUCCESS) {
     return PSA_SUCCESS;
   }
+  if (status == BEE_CRYPTO_ERROR_NOT_SUPPORTED) {
+    return PSA_ERROR_NOT_SUPPORTED;
+  }
 
   return status == BEE_CRYPTO_ERROR_INVALID_ARGUMENT
              ? PSA_ERROR_INVALID_ARGUMENT
              : PSA_ERROR_HARDWARE_FAILURE;
+}
+
+static void bee_psa_p256_read(const uint8_t *input, size_t input_length,
+                              uint32_t output[BEE_ECC_P256_WORDS]) {
+  size_t used =
+      input_length > BEE_PSA_P256_BYTES ? BEE_PSA_P256_BYTES : input_length;
+
+  memset(output, 0, BEE_PSA_P256_BYTES);
+  for (size_t i = 0; i < used; i++) {
+    output[(used - 1U - i) / sizeof(uint32_t)] |=
+        (uint32_t)input[i] << (8U * ((used - 1U - i) % sizeof(uint32_t)));
+  }
+}
+
+static void bee_psa_p256_write(const uint32_t input[BEE_ECC_P256_WORDS],
+                               uint8_t output[BEE_PSA_P256_BYTES]) {
+  for (size_t i = 0; i < BEE_PSA_P256_BYTES; i++) {
+    output[BEE_PSA_P256_BYTES - 1U - i] =
+        (uint8_t)(input[i / sizeof(uint32_t)] >> (8U * (i % sizeof(uint32_t))));
+  }
+}
+
+static int bee_psa_p256_is_zero(const uint32_t value[BEE_ECC_P256_WORDS]) {
+  uint32_t result = 0U;
+
+  for (size_t i = 0; i < BEE_ECC_P256_WORDS; i++) {
+    result |= value[i];
+  }
+  return result == 0U;
+}
+
+static int bee_psa_p256_compare(const uint32_t left[BEE_ECC_P256_WORDS],
+                                const uint32_t right[BEE_ECC_P256_WORDS]) {
+  for (size_t i = BEE_ECC_P256_WORDS; i > 0U; i--) {
+    if (left[i - 1U] < right[i - 1U]) {
+      return -1;
+    }
+    if (left[i - 1U] > right[i - 1U]) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static void bee_psa_p256_reduce_order(uint32_t value[BEE_ECC_P256_WORDS]) {
+  uint64_t borrow = 0U;
+
+  if (bee_psa_p256_compare(value, bee_psa_p256_order) < 0) {
+    return;
+  }
+  for (size_t i = 0; i < BEE_ECC_P256_WORDS; i++) {
+    uint64_t subtrahend = (uint64_t)bee_psa_p256_order[i] + borrow;
+    uint64_t current = value[i];
+
+    value[i] = (uint32_t)(current - subtrahend);
+    borrow = current < subtrahend;
+  }
+}
+
+static int bee_psa_p256_point_is_zero(const struct bee_ecc_point *point) {
+  return bee_psa_p256_is_zero(point->x) && bee_psa_p256_is_zero(point->y);
+}
+
+static psa_status_t
+bee_psa_validate_ecdsa(const psa_key_attributes_t *attributes,
+                       psa_algorithm_t alg, bool signing) {
+  psa_key_type_t type = psa_get_key_type(attributes);
+
+#if !defined(BEE_CRYPTO_RTL87X2G)
+  (void)type;
+  (void)alg;
+  (void)signing;
+  return PSA_ERROR_NOT_SUPPORTED;
+#else
+  if (!PSA_ALG_IS_RANDOMIZED_ECDSA(alg) ||
+      PSA_KEY_TYPE_ECC_GET_FAMILY(type) != PSA_ECC_FAMILY_SECP_R1 ||
+      psa_get_key_bits(attributes) != 256U) {
+    return PSA_ERROR_NOT_SUPPORTED;
+  }
+  if (signing) {
+    return type == PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1)
+               ? PSA_SUCCESS
+               : PSA_ERROR_NOT_SUPPORTED;
+  }
+  return (type == PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1) ||
+          type == PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_SECP_R1))
+             ? PSA_SUCCESS
+             : PSA_ERROR_NOT_SUPPORTED;
+#endif
+}
+
+static psa_status_t
+bee_psa_p256_public_from_key(psa_key_type_t type, const uint8_t *key_buffer,
+                             size_t key_buffer_size,
+                             struct bee_ecc_point *public_key) {
+  if (type == PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_SECP_R1)) {
+    if (key_buffer_size != 1U + 2U * BEE_PSA_P256_BYTES ||
+        key_buffer[0] != 0x04U) {
+      return PSA_ERROR_INVALID_ARGUMENT;
+    }
+    bee_psa_p256_read(&key_buffer[1], BEE_PSA_P256_BYTES, public_key->x);
+    bee_psa_p256_read(&key_buffer[1U + BEE_PSA_P256_BYTES], BEE_PSA_P256_BYTES,
+                      public_key->y);
+    public_key->z[0] = 1U;
+    return PSA_SUCCESS;
+  }
+
+  if (key_buffer_size != BEE_PSA_P256_BYTES) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+
+  uint32_t private_key[BEE_ECC_P256_WORDS];
+  bee_psa_p256_read(key_buffer, key_buffer_size, private_key);
+  if (bee_psa_p256_is_zero(private_key) ||
+      bee_psa_p256_compare(private_key, bee_psa_p256_order) >= 0) {
+    memset(private_key, 0, sizeof(private_key));
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  int ret = bee_ecc_p256_mul(private_key, &bee_psa_p256_generator, public_key);
+  memset(private_key, 0, sizeof(private_key));
+  return bee_psa_status(ret);
+}
+
+psa_status_t bee_psa_sign_hash(const psa_key_attributes_t *attributes,
+                               const uint8_t *key_buffer,
+                               size_t key_buffer_size, psa_algorithm_t alg,
+                               const uint8_t *hash, size_t hash_length,
+                               uint8_t *signature, size_t signature_size,
+                               size_t *signature_length) {
+  uint32_t private_key[BEE_ECC_P256_WORDS];
+  uint32_t e[BEE_ECC_P256_WORDS];
+  uint32_t k[BEE_ECC_P256_WORDS];
+  uint32_t r[BEE_ECC_P256_WORDS];
+  uint32_t s[BEE_ECC_P256_WORDS];
+  uint32_t temporary[BEE_ECC_P256_WORDS];
+  struct bee_ecc_point point;
+  psa_status_t status = bee_psa_validate_ecdsa(attributes, alg, true);
+
+  if (status != PSA_SUCCESS) {
+    return status;
+  }
+  if (key_buffer == NULL || hash == NULL || signature == NULL ||
+      signature_length == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (key_buffer_size != BEE_PSA_P256_BYTES) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (signature_size < BEE_PSA_P256_SIGNATURE_BYTES) {
+    return PSA_ERROR_BUFFER_TOO_SMALL;
+  }
+
+  bee_psa_p256_read(key_buffer, key_buffer_size, private_key);
+  bee_psa_p256_read(hash, hash_length, e);
+  bee_psa_p256_reduce_order(e);
+  if (bee_psa_p256_is_zero(private_key) ||
+      bee_psa_p256_compare(private_key, bee_psa_p256_order) >= 0) {
+    status = PSA_ERROR_INVALID_ARGUMENT;
+    goto exit;
+  }
+
+  for (unsigned int attempt = 0; attempt < 10U; attempt++) {
+    uint8_t random[BEE_PSA_P256_BYTES];
+
+    status = psa_generate_random(random, sizeof(random));
+    if (status != PSA_SUCCESS) {
+      break;
+    }
+    bee_psa_p256_read(random, sizeof(random), k);
+    memset(random, 0, sizeof(random));
+    if (bee_psa_p256_is_zero(k) ||
+        bee_psa_p256_compare(k, bee_psa_p256_order) >= 0) {
+      continue;
+    }
+
+    if (bee_crypto_lock() != BEE_CRYPTO_SUCCESS) {
+      status = PSA_ERROR_HARDWARE_FAILURE;
+      break;
+    }
+    status = bee_psa_status(bee_ecc_p256_enable());
+    if (status == PSA_SUCCESS) {
+      status =
+          bee_psa_status(bee_ecc_p256_mul(k, &bee_psa_p256_generator, &point));
+    }
+    if (status == PSA_SUCCESS) {
+      status = bee_psa_status(bee_ecc_p256_mod_prepare(bee_psa_p256_order));
+    }
+    if (status == PSA_SUCCESS) {
+      memcpy(r, point.x, sizeof(r));
+      status = bee_psa_status(bee_ecc_p256_mod_reduce(r));
+    }
+    if (status == PSA_SUCCESS && !bee_psa_p256_is_zero(r)) {
+      status = bee_psa_status(bee_ecc_p256_mod_mul(r, private_key, temporary));
+    }
+    if (status == PSA_SUCCESS && !bee_psa_p256_is_zero(r)) {
+      status = bee_psa_status(bee_ecc_p256_mod_add(e, temporary, temporary));
+    }
+    if (status == PSA_SUCCESS && !bee_psa_p256_is_zero(r)) {
+      status = bee_psa_status(bee_ecc_p256_mod_inv(k, s));
+    }
+    if (status == PSA_SUCCESS && !bee_psa_p256_is_zero(r)) {
+      status = bee_psa_status(bee_ecc_p256_mod_mul(s, temporary, s));
+    }
+    bee_ecc_p256_disable();
+    bee_crypto_unlock();
+
+    if (status != PSA_SUCCESS) {
+      break;
+    }
+    if (bee_psa_p256_is_zero(r) || bee_psa_p256_is_zero(s)) {
+      continue;
+    }
+
+    bee_psa_p256_write(r, signature);
+    bee_psa_p256_write(s, signature + BEE_PSA_P256_BYTES);
+    *signature_length = BEE_PSA_P256_SIGNATURE_BYTES;
+    status = PSA_SUCCESS;
+    goto exit;
+  }
+
+  if (status == PSA_SUCCESS) {
+    status = PSA_ERROR_INSUFFICIENT_ENTROPY;
+  }
+
+exit:
+  memset(private_key, 0, sizeof(private_key));
+  memset(k, 0, sizeof(k));
+  memset(temporary, 0, sizeof(temporary));
+  return status;
+}
+
+psa_status_t bee_psa_verify_hash(const psa_key_attributes_t *attributes,
+                                 const uint8_t *key_buffer,
+                                 size_t key_buffer_size, psa_algorithm_t alg,
+                                 const uint8_t *hash, size_t hash_length,
+                                 const uint8_t *signature,
+                                 size_t signature_length) {
+  struct bee_ecc_point public_key = {0};
+  struct bee_ecc_point point1;
+  struct bee_ecc_point point2;
+  struct bee_ecc_point result;
+  uint32_t e[BEE_ECC_P256_WORDS];
+  uint32_t r[BEE_ECC_P256_WORDS];
+  uint32_t s[BEE_ECC_P256_WORDS];
+  uint32_t inverse[BEE_ECC_P256_WORDS];
+  uint32_t u1[BEE_ECC_P256_WORDS];
+  uint32_t u2[BEE_ECC_P256_WORDS];
+  psa_key_type_t type = psa_get_key_type(attributes);
+  psa_status_t status = bee_psa_validate_ecdsa(attributes, alg, false);
+
+  if (status != PSA_SUCCESS) {
+    return status;
+  }
+  if (key_buffer == NULL || hash == NULL || signature == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (signature_length != BEE_PSA_P256_SIGNATURE_BYTES) {
+    return PSA_ERROR_INVALID_SIGNATURE;
+  }
+
+  bee_psa_p256_read(hash, hash_length, e);
+  bee_psa_p256_reduce_order(e);
+  bee_psa_p256_read(signature, BEE_PSA_P256_BYTES, r);
+  bee_psa_p256_read(signature + BEE_PSA_P256_BYTES, BEE_PSA_P256_BYTES, s);
+  if (bee_psa_p256_is_zero(r) || bee_psa_p256_is_zero(s) ||
+      bee_psa_p256_compare(r, bee_psa_p256_order) >= 0 ||
+      bee_psa_p256_compare(s, bee_psa_p256_order) >= 0) {
+    return PSA_ERROR_INVALID_SIGNATURE;
+  }
+
+  if (bee_crypto_lock() != BEE_CRYPTO_SUCCESS) {
+    return PSA_ERROR_HARDWARE_FAILURE;
+  }
+  status = bee_psa_status(bee_ecc_p256_enable());
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_p256_public_from_key(type, key_buffer, key_buffer_size,
+                                          &public_key);
+  }
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_status(bee_ecc_p256_mod_prepare(bee_psa_p256_order));
+  }
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_status(bee_ecc_p256_mod_inv(s, inverse));
+  }
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_status(bee_ecc_p256_mod_mul(inverse, e, u1));
+  }
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_status(bee_ecc_p256_mod_mul(inverse, r, u2));
+  }
+  if (status == PSA_SUCCESS) {
+    status =
+        bee_psa_status(bee_ecc_p256_mul(u1, &bee_psa_p256_generator, &point1));
+  }
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_status(bee_ecc_p256_mul(u2, &public_key, &point2));
+  }
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_status(bee_ecc_p256_add(&point1, &point2, &result));
+  }
+  if (status == PSA_SUCCESS && bee_psa_p256_point_is_zero(&result)) {
+    status = PSA_ERROR_INVALID_SIGNATURE;
+  }
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_status(bee_ecc_p256_mod_reduce(result.x));
+  }
+  if (status == PSA_SUCCESS && memcmp(result.x, r, BEE_PSA_P256_BYTES) != 0) {
+    status = PSA_ERROR_INVALID_SIGNATURE;
+  }
+  bee_ecc_p256_disable();
+  bee_crypto_unlock();
+  return status;
 }
 
 static psa_status_t bee_psa_validate_key(const psa_key_attributes_t *attributes,

@@ -221,6 +221,15 @@ bool hw_aes_encrypt256(uint32_t *p_in, uint32_t *p_out, uint16_t data_word_len,
 bool hw_aes_decrypt256(uint32_t *p_in, uint32_t *p_out, uint16_t data_word_len,
                        uint32_t *p_key, uint32_t *p_iv, T_HW_AES_MODE mode);
 
+void hw_pke_clock(bool enable);
+void hw_pke_init(bool byte_swap_en, bool word_swap_en, uint32_t word_swap_base);
+void hw_ecc_init(uint32_t key_bits, PKE_MODE mode, bool go_to_end_loop,
+                 bool RR_mod_n_ready);
+void hw_ecc_set_sub_operand(uint32_t operand_addr, uint32_t *operands,
+                            uint32_t byte_len);
+bool hw_ecc_set_all_operands(ECC_GROUP *grp, uint32_t *e, uint32_t e_byte_size);
+ERR_CODE hw_ecc_compute(void *result, uint32_t output_addr, uint16_t func_id);
+
 /** End of CRYPTO_ENGINE_Exported_Functions
   * @}
   */

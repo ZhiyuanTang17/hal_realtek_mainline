@@ -99,3 +99,276 @@ int bee_aes_hw_crypt_block(const uint8_t *key, size_t key_len,
   bee_aes_copy_from_hw(out_hw, out, BEE_AES_BLOCK_SIZE);
   return BEE_CRYPTO_SUCCESS;
 }
+
+#if defined(BEE_CRYPTO_RTL87X2G)
+#define BEE_PKE_MMEM_ADDR 0x50090000U
+#define BEE_ECC_N_ADDR (BEE_PKE_MMEM_ADDR + 0x000U)
+#define BEE_ECC_A_ADDR (BEE_PKE_MMEM_ADDR + 0x080U)
+#define BEE_ECC_B_ADDR (BEE_PKE_MMEM_ADDR + 0x100U)
+#define BEE_ECC_X_ADDR (BEE_PKE_MMEM_ADDR + 0x140U)
+#define BEE_ECC_Y_ADDR (BEE_PKE_MMEM_ADDR + 0x180U)
+#define BEE_ECC_Z_ADDR (BEE_PKE_MMEM_ADDR + 0x1c0U)
+#define BEE_ECC_RX_ADDR (BEE_PKE_MMEM_ADDR + 0x200U)
+#define BEE_ECC_RY_ADDR (BEE_PKE_MMEM_ADDR + 0x240U)
+#define BEE_ECC_RZ_ADDR (BEE_PKE_MMEM_ADDR + 0x280U)
+
+#define BEE_ECC_MUL_ENTRY 0x1U
+#define BEE_MOD_MUL_ENTRY 0x2U
+#define BEE_MOD_ADD_ENTRY 0x3U
+#define BEE_R_SQUARE_ENTRY 0x5U
+#define BEE_N_INVERSE_ENTRY 0x6U
+#define BEE_MOD_INVERSE_ENTRY 0x7U
+#define BEE_ECC_ADD_ENTRY 0x8U
+#define BEE_MOD_REDUCE_ENTRY 0xeU
+
+#define BEE_ECC_GO_TO_END true
+#define BEE_ECC_RR_READY true
+
+static const uint32_t bee_p256_prime[BEE_ECC_P256_WORDS] = {
+    0xffffffffU, 0xffffffffU, 0xffffffffU, 0x00000000U,
+    0x00000000U, 0x00000000U, 0x00000001U, 0xffffffffU,
+};
+static const uint32_t bee_p256_order[BEE_ECC_P256_WORDS] = {
+    0xfc632551U, 0xf3b9cac2U, 0xa7179e84U, 0xbce6faadU,
+    0xffffffffU, 0xffffffffU, 0x00000000U, 0xffffffffU,
+};
+static const uint32_t bee_p256_a[BEE_ECC_P256_WORDS] = {
+    0xfffffffcU, 0xffffffffU, 0xffffffffU, 0x00000000U,
+    0x00000000U, 0x00000000U, 0x00000001U, 0xffffffffU,
+};
+static const uint32_t bee_p256_b[BEE_ECC_P256_WORDS] = {
+    0x27d2604bU, 0x3bce3c3eU, 0xcc53b0f6U, 0x651d06b0U,
+    0x769886bcU, 0xb3ebbd55U, 0xaa3a93e7U, 0x5ac635d8U,
+};
+
+static int bee_ecc_result(ERR_CODE status) {
+  return status == ERR_NONE ? BEE_CRYPTO_SUCCESS : BEE_CRYPTO_ERROR_HARDWARE;
+}
+
+int bee_ecc_p256_enable(void) {
+  hw_pke_clock(true);
+  hw_pke_init(false, false, 0U);
+  return BEE_CRYPTO_SUCCESS;
+}
+
+void bee_ecc_p256_disable(void) { hw_pke_clock(false); }
+
+int bee_ecc_p256_mod_prepare(const uint32_t modulus[BEE_ECC_P256_WORDS]) {
+  uint32_t temporary[16];
+
+  if (modulus == NULL) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  hw_ecc_init(256U, ECC_PRIME_MODE, BEE_ECC_GO_TO_END, !BEE_ECC_RR_READY);
+  hw_ecc_set_sub_operand(BEE_ECC_N_ADDR, (uint32_t *)modulus,
+                         BEE_ECC_P256_WORDS * sizeof(uint32_t));
+  if (hw_ecc_compute(temporary, BEE_ECC_RX_ADDR, BEE_N_INVERSE_ENTRY) !=
+      ERR_NONE) {
+    return BEE_CRYPTO_ERROR_HARDWARE;
+  }
+
+  hw_ecc_init(256U, ECC_PRIME_MODE, BEE_ECC_GO_TO_END, !BEE_ECC_RR_READY);
+  return bee_ecc_result(
+      hw_ecc_compute(temporary, BEE_ECC_RX_ADDR, BEE_R_SQUARE_ENTRY));
+}
+
+int bee_ecc_p256_mod_reduce(uint32_t value[BEE_ECC_P256_WORDS]) {
+  if (value == NULL) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  hw_ecc_init(256U, ECC_PRIME_MODE, BEE_ECC_GO_TO_END, !BEE_ECC_RR_READY);
+  hw_ecc_set_sub_operand(BEE_ECC_N_ADDR, (uint32_t *)bee_p256_order,
+                         sizeof(bee_p256_order));
+  hw_ecc_set_sub_operand(BEE_ECC_RX_ADDR, value,
+                         BEE_ECC_P256_WORDS * sizeof(uint32_t));
+  return bee_ecc_result(
+      hw_ecc_compute(value, BEE_ECC_RX_ADDR, BEE_MOD_REDUCE_ENTRY));
+}
+
+int bee_ecc_p256_mod_mul(const uint32_t left[BEE_ECC_P256_WORDS],
+                         const uint32_t right[BEE_ECC_P256_WORDS],
+                         uint32_t result[BEE_ECC_P256_WORDS]) {
+  if (left == NULL || right == NULL || result == NULL) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  hw_ecc_init(256U, ECC_PRIME_MODE, BEE_ECC_GO_TO_END, BEE_ECC_RR_READY);
+  hw_ecc_set_sub_operand(BEE_ECC_A_ADDR, (uint32_t *)left,
+                         BEE_ECC_P256_WORDS * sizeof(uint32_t));
+  hw_ecc_set_sub_operand(BEE_ECC_B_ADDR, (uint32_t *)right,
+                         BEE_ECC_P256_WORDS * sizeof(uint32_t));
+  return bee_ecc_result(
+      hw_ecc_compute(result, BEE_ECC_A_ADDR, BEE_MOD_MUL_ENTRY));
+}
+
+int bee_ecc_p256_mod_add(const uint32_t left[BEE_ECC_P256_WORDS],
+                         const uint32_t right[BEE_ECC_P256_WORDS],
+                         uint32_t result[BEE_ECC_P256_WORDS]) {
+  if (left == NULL || right == NULL || result == NULL) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  hw_ecc_init(256U, ECC_PRIME_MODE, BEE_ECC_GO_TO_END, BEE_ECC_RR_READY);
+  hw_ecc_set_sub_operand(BEE_ECC_A_ADDR, (uint32_t *)left,
+                         BEE_ECC_P256_WORDS * sizeof(uint32_t));
+  hw_ecc_set_sub_operand(BEE_ECC_B_ADDR, (uint32_t *)right,
+                         BEE_ECC_P256_WORDS * sizeof(uint32_t));
+  return bee_ecc_result(
+      hw_ecc_compute(result, BEE_ECC_A_ADDR, BEE_MOD_ADD_ENTRY));
+}
+
+int bee_ecc_p256_mod_inv(const uint32_t value[BEE_ECC_P256_WORDS],
+                         uint32_t result[BEE_ECC_P256_WORDS]) {
+  if (value == NULL || result == NULL) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  hw_ecc_init(256U, ECC_PRIME_MODE, BEE_ECC_GO_TO_END, BEE_ECC_RR_READY);
+  hw_ecc_set_sub_operand(BEE_ECC_B_ADDR, (uint32_t *)value,
+                         BEE_ECC_P256_WORDS * sizeof(uint32_t));
+  return bee_ecc_result(
+      hw_ecc_compute(result, BEE_ECC_B_ADDR, BEE_MOD_INVERSE_ENTRY));
+}
+
+int bee_ecc_p256_mul(const uint32_t scalar[BEE_ECC_P256_WORDS],
+                     const struct bee_ecc_point *point,
+                     struct bee_ecc_point *result) {
+  ECC_GROUP group = {0};
+  ECC_POINT base = {0};
+  ECC_POINT hardware_result = {0};
+  uint32_t a[BEE_ECC_P256_WORDS];
+  uint32_t b[BEE_ECC_P256_WORDS];
+  uint32_t n[BEE_ECC_P256_WORDS];
+
+  if (scalar == NULL || point == NULL || result == NULL) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  memcpy(a, bee_p256_a, sizeof(a));
+  memcpy(b, bee_p256_b, sizeof(b));
+  memcpy(n, bee_p256_order, sizeof(n));
+  memcpy(base.x, point->x, sizeof(point->x));
+  memcpy(base.y, point->y, sizeof(point->y));
+  memcpy(base.z, point->z, sizeof(point->z));
+  group.N = (uint32_t *)bee_p256_prime;
+  group.A = a;
+  group.B = b;
+  group.n = n;
+  group.G = base;
+  group.key_bits = 256U;
+  group.mode = ECC_PRIME_MODE;
+
+  hw_ecc_init(256U, ECC_PRIME_MODE, !BEE_ECC_GO_TO_END, !BEE_ECC_RR_READY);
+  if (!hw_ecc_set_all_operands(&group, (uint32_t *)scalar,
+                               BEE_ECC_P256_WORDS * sizeof(uint32_t))) {
+    return BEE_CRYPTO_ERROR_HARDWARE;
+  }
+  if (hw_ecc_compute(&hardware_result, BEE_ECC_RX_ADDR, BEE_ECC_MUL_ENTRY) !=
+      ERR_NONE) {
+    return BEE_CRYPTO_ERROR_HARDWARE;
+  }
+
+  memcpy(result->x, hardware_result.x, sizeof(result->x));
+  memcpy(result->y, hardware_result.y, sizeof(result->y));
+  memset(result->z, 0, sizeof(result->z));
+  result->z[0] = 1U;
+  return BEE_CRYPTO_SUCCESS;
+}
+
+int bee_ecc_p256_add(const struct bee_ecc_point *left,
+                     const struct bee_ecc_point *right,
+                     struct bee_ecc_point *result) {
+  ECC_POINT hardware_result = {0};
+
+  if (left == NULL || right == NULL || result == NULL) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  if (bee_ecc_p256_mod_prepare(bee_p256_prime) != BEE_CRYPTO_SUCCESS) {
+    return BEE_CRYPTO_ERROR_HARDWARE;
+  }
+  hw_ecc_init(256U, ECC_PRIME_MODE, BEE_ECC_GO_TO_END, BEE_ECC_RR_READY);
+  hw_ecc_set_sub_operand(BEE_ECC_A_ADDR, (uint32_t *)bee_p256_a,
+                         sizeof(bee_p256_a));
+  hw_ecc_set_sub_operand(BEE_ECC_B_ADDR, (uint32_t *)bee_p256_b,
+                         sizeof(bee_p256_b));
+  hw_ecc_set_sub_operand(BEE_ECC_X_ADDR, (uint32_t *)left->x, sizeof(left->x));
+  hw_ecc_set_sub_operand(BEE_ECC_Y_ADDR, (uint32_t *)left->y, sizeof(left->y));
+  hw_ecc_set_sub_operand(BEE_ECC_Z_ADDR, (uint32_t *)left->z, sizeof(left->z));
+  hw_ecc_set_sub_operand(BEE_ECC_RX_ADDR, (uint32_t *)right->x,
+                         sizeof(right->x));
+  hw_ecc_set_sub_operand(BEE_ECC_RY_ADDR, (uint32_t *)right->y,
+                         sizeof(right->y));
+  hw_ecc_set_sub_operand(BEE_ECC_RZ_ADDR, (uint32_t *)right->z,
+                         sizeof(right->z));
+  if (hw_ecc_compute(&hardware_result, BEE_ECC_RX_ADDR, BEE_ECC_ADD_ENTRY) !=
+      ERR_NONE) {
+    return BEE_CRYPTO_ERROR_HARDWARE;
+  }
+
+  memcpy(result->x, hardware_result.x, sizeof(result->x));
+  memcpy(result->y, hardware_result.y, sizeof(result->y));
+  memset(result->z, 0, sizeof(result->z));
+  result->z[0] = 1U;
+  return BEE_CRYPTO_SUCCESS;
+}
+#else
+int bee_ecc_p256_enable(void) { return BEE_CRYPTO_ERROR_NOT_SUPPORTED; }
+
+void bee_ecc_p256_disable(void) {}
+
+int bee_ecc_p256_mod_prepare(const uint32_t modulus[BEE_ECC_P256_WORDS]) {
+  (void)modulus;
+  return BEE_CRYPTO_ERROR_NOT_SUPPORTED;
+}
+
+int bee_ecc_p256_mod_reduce(uint32_t value[BEE_ECC_P256_WORDS]) {
+  (void)value;
+  return BEE_CRYPTO_ERROR_NOT_SUPPORTED;
+}
+
+int bee_ecc_p256_mod_mul(const uint32_t left[BEE_ECC_P256_WORDS],
+                         const uint32_t right[BEE_ECC_P256_WORDS],
+                         uint32_t result[BEE_ECC_P256_WORDS]) {
+  (void)left;
+  (void)right;
+  (void)result;
+  return BEE_CRYPTO_ERROR_NOT_SUPPORTED;
+}
+
+int bee_ecc_p256_mod_add(const uint32_t left[BEE_ECC_P256_WORDS],
+                         const uint32_t right[BEE_ECC_P256_WORDS],
+                         uint32_t result[BEE_ECC_P256_WORDS]) {
+  (void)left;
+  (void)right;
+  (void)result;
+  return BEE_CRYPTO_ERROR_NOT_SUPPORTED;
+}
+
+int bee_ecc_p256_mod_inv(const uint32_t value[BEE_ECC_P256_WORDS],
+                         uint32_t result[BEE_ECC_P256_WORDS]) {
+  (void)value;
+  (void)result;
+  return BEE_CRYPTO_ERROR_NOT_SUPPORTED;
+}
+
+int bee_ecc_p256_mul(const uint32_t scalar[BEE_ECC_P256_WORDS],
+                     const struct bee_ecc_point *point,
+                     struct bee_ecc_point *result) {
+  (void)scalar;
+  (void)point;
+  (void)result;
+  return BEE_CRYPTO_ERROR_NOT_SUPPORTED;
+}
+
+int bee_ecc_p256_add(const struct bee_ecc_point *left,
+                     const struct bee_ecc_point *right,
+                     struct bee_ecc_point *result) {
+  (void)left;
+  (void)right;
+  (void)result;
+  return BEE_CRYPTO_ERROR_NOT_SUPPORTED;
+}
+#endif

@@ -62,6 +62,12 @@ SECTIONS
     PROVIDE(hw_sha256_cpu_update = 0x0001c2f9);
     PROVIDE(hw_sha256_finish = 0x0001c301);
     PROVIDE(hw_sha256 = 0x0001c309);
+    PROVIDE(hw_pke_clock = 0x0001c311);
+    PROVIDE(hw_pke_init = 0x0001c319);
+    PROVIDE(hw_ecc_init = 0x0001c349);
+    PROVIDE(hw_ecc_set_sub_operand = 0x0001c351);
+    PROVIDE(hw_ecc_set_all_operands = 0x0001c359);
+    PROVIDE(hw_ecc_compute = 0x0001c361);
     PROVIDE(secure_app_function_call = 0x0001c3b9);
     PROVIDE(secure_function_call = 0x0001c3c1);
     PROVIDE(set_secure_func_ptr = 0x0001c3c9);
