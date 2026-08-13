@@ -27,7 +27,11 @@ typedef struct {
 typedef struct {
   uint8_t key[32];
   uint8_t iv[16];
+  uint8_t buffer[16];
+  uint8_t stream[16];
   size_t key_length;
+  size_t buffer_length;
+  size_t stream_used;
   psa_algorithm_t algorithm;
   uint8_t decrypt;
   uint8_t iv_set;

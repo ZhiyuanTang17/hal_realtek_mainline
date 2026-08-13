@@ -692,77 +692,6 @@ static psa_status_t bee_psa_ccm_prepare(
   return PSA_SUCCESS;
 }
 
-psa_status_t bee_psa_cipher_encrypt(const psa_key_attributes_t *attributes,
-                                    const uint8_t *key_buffer,
-                                    size_t key_buffer_size, psa_algorithm_t alg,
-                                    const uint8_t *iv, size_t iv_length,
-                                    const uint8_t *input, size_t input_length,
-                                    uint8_t *output, size_t output_size,
-                                    size_t *output_length) {
-  psa_status_t status =
-      bee_psa_validate_key(attributes, key_buffer, key_buffer_size);
-
-  if (status != PSA_SUCCESS) {
-    return status;
-  }
-  if (alg != PSA_ALG_ECB_NO_PADDING || iv_length != 0U) {
-    return PSA_ERROR_NOT_SUPPORTED;
-  }
-  if (input_length != BEE_PSA_CCM_BLOCK_SIZE) {
-    return PSA_ERROR_NOT_SUPPORTED;
-  }
-  if (input == NULL || output == NULL || output_length == NULL) {
-    return PSA_ERROR_INVALID_ARGUMENT;
-  }
-  if (output_size < input_length) {
-    return PSA_ERROR_BUFFER_TOO_SMALL;
-  }
-
-  (void)iv;
-  if (bee_crypto_lock() != BEE_CRYPTO_SUCCESS) {
-    return PSA_ERROR_HARDWARE_FAILURE;
-  }
-  status = bee_psa_ecb_crypt(key_buffer, key_buffer_size, input, output, false);
-  bee_crypto_unlock();
-  if (status == PSA_SUCCESS) {
-    *output_length = input_length;
-  }
-  return status;
-}
-
-psa_status_t bee_psa_cipher_decrypt(const psa_key_attributes_t *attributes,
-                                    const uint8_t *key_buffer,
-                                    size_t key_buffer_size, psa_algorithm_t alg,
-                                    const uint8_t *input, size_t input_length,
-                                    uint8_t *output, size_t output_size,
-                                    size_t *output_length) {
-  psa_status_t status =
-      bee_psa_validate_key(attributes, key_buffer, key_buffer_size);
-
-  if (status != PSA_SUCCESS) {
-    return status;
-  }
-  if (alg != PSA_ALG_ECB_NO_PADDING || input_length != BEE_PSA_CCM_BLOCK_SIZE) {
-    return PSA_ERROR_NOT_SUPPORTED;
-  }
-  if (input == NULL || output == NULL || output_length == NULL) {
-    return PSA_ERROR_INVALID_ARGUMENT;
-  }
-  if (output_size < input_length) {
-    return PSA_ERROR_BUFFER_TOO_SMALL;
-  }
-
-  if (bee_crypto_lock() != BEE_CRYPTO_SUCCESS) {
-    return PSA_ERROR_HARDWARE_FAILURE;
-  }
-  status = bee_psa_ecb_crypt(key_buffer, key_buffer_size, input, output, true);
-  bee_crypto_unlock();
-  if (status == PSA_SUCCESS) {
-    *output_length = input_length;
-  }
-  return status;
-}
-
 static psa_status_t bee_psa_cipher_setup(bee_psa_cipher_operation_t *operation,
                                          const psa_key_attributes_t *attributes,
                                          const uint8_t *key_buffer,
@@ -774,7 +703,8 @@ static psa_status_t bee_psa_cipher_setup(bee_psa_cipher_operation_t *operation,
   if (status != PSA_SUCCESS) {
     return status;
   }
-  if (alg != PSA_ALG_CBC_NO_PADDING) {
+  if (alg != PSA_ALG_CBC_NO_PADDING && alg != PSA_ALG_CBC_PKCS7 &&
+      alg != PSA_ALG_CFB && alg != PSA_ALG_OFB && alg != PSA_ALG_CTR) {
     return PSA_ERROR_NOT_SUPPORTED;
   }
 
@@ -806,12 +736,180 @@ bee_psa_cipher_decrypt_setup(bee_psa_cipher_operation_t *operation,
 
 psa_status_t bee_psa_cipher_set_iv(bee_psa_cipher_operation_t *operation,
                                    const uint8_t *iv, size_t iv_length) {
-  if (iv == NULL || iv_length != BEE_AES_BLOCK_SIZE || operation->iv_set) {
+  psa_status_t status = PSA_SUCCESS;
+
+  if (operation == NULL || iv == NULL || iv_length != BEE_AES_BLOCK_SIZE ||
+      operation->iv_set) {
     return PSA_ERROR_INVALID_ARGUMENT;
   }
 
   memcpy(operation->iv, iv, BEE_AES_BLOCK_SIZE);
-  operation->iv_set = 1U;
+  if (operation->algorithm == PSA_ALG_CFB ||
+      operation->algorithm == PSA_ALG_OFB ||
+      operation->algorithm == PSA_ALG_CTR) {
+    if (bee_crypto_lock() != BEE_CRYPTO_SUCCESS) {
+      return PSA_ERROR_HARDWARE_FAILURE;
+    }
+    status = bee_psa_ecb_crypt(operation->key, operation->key_length,
+                               operation->iv, operation->stream, false);
+    bee_crypto_unlock();
+  }
+  if (status == PSA_SUCCESS) {
+    operation->iv_set = 1U;
+  }
+  return status;
+}
+
+static int bee_psa_cipher_cbc_block(bee_psa_cipher_operation_t *operation,
+                                    const uint8_t input[BEE_AES_BLOCK_SIZE],
+                                    uint8_t output[BEE_AES_BLOCK_SIZE]) {
+  uint8_t next_iv[BEE_AES_BLOCK_SIZE];
+  int ret;
+
+  if (operation->decrypt) {
+    memcpy(next_iv, input, sizeof(next_iv));
+  }
+  ret = bee_aes_hw_crypt_block(operation->key, operation->key_length,
+                               AES_MODE_CBC, input, output, operation->iv,
+                               operation->decrypt);
+  if (ret != BEE_CRYPTO_SUCCESS) {
+    return ret;
+  }
+  memcpy(operation->iv, operation->decrypt ? next_iv : output,
+         BEE_AES_BLOCK_SIZE);
+  return BEE_CRYPTO_SUCCESS;
+}
+
+static psa_status_t bee_psa_cipher_update_cbc_no_padding(
+    bee_psa_cipher_operation_t *operation, const uint8_t *input,
+    size_t input_length, uint8_t *output, size_t *output_length) {
+  size_t produced = 0U;
+
+  while (input_length > 0U) {
+    size_t chunk = BEE_AES_BLOCK_SIZE - operation->buffer_length;
+
+    if (chunk > input_length) {
+      chunk = input_length;
+    }
+    memcpy(&operation->buffer[operation->buffer_length], input, chunk);
+    operation->buffer_length += chunk;
+    input += chunk;
+    input_length -= chunk;
+
+    if (operation->buffer_length == BEE_AES_BLOCK_SIZE) {
+      int ret = bee_psa_cipher_cbc_block(operation, operation->buffer, output);
+
+      if (ret != BEE_CRYPTO_SUCCESS) {
+        return bee_psa_status(ret);
+      }
+      operation->buffer_length = 0U;
+      output += BEE_AES_BLOCK_SIZE;
+      produced += BEE_AES_BLOCK_SIZE;
+    }
+  }
+  *output_length = produced;
+  return PSA_SUCCESS;
+}
+
+static psa_status_t bee_psa_cipher_update_cbc_pkcs7(
+    bee_psa_cipher_operation_t *operation, const uint8_t *input,
+    size_t input_length, uint8_t *output, size_t *output_length) {
+  size_t produced = 0U;
+
+  while (input_length > 0U) {
+    size_t chunk;
+
+    if (operation->decrypt &&
+        operation->buffer_length == BEE_AES_BLOCK_SIZE) {
+      int ret = bee_psa_cipher_cbc_block(operation, operation->buffer, output);
+
+      if (ret != BEE_CRYPTO_SUCCESS) {
+        return bee_psa_status(ret);
+      }
+      operation->buffer_length = 0U;
+      output += BEE_AES_BLOCK_SIZE;
+      produced += BEE_AES_BLOCK_SIZE;
+    }
+
+    chunk = BEE_AES_BLOCK_SIZE - operation->buffer_length;
+    if (chunk > input_length) {
+      chunk = input_length;
+    }
+    memcpy(&operation->buffer[operation->buffer_length], input, chunk);
+    operation->buffer_length += chunk;
+    input += chunk;
+    input_length -= chunk;
+
+    if (!operation->decrypt &&
+        operation->buffer_length == BEE_AES_BLOCK_SIZE) {
+      int ret = bee_psa_cipher_cbc_block(operation, operation->buffer, output);
+
+      if (ret != BEE_CRYPTO_SUCCESS) {
+        return bee_psa_status(ret);
+      }
+      operation->buffer_length = 0U;
+      output += BEE_AES_BLOCK_SIZE;
+      produced += BEE_AES_BLOCK_SIZE;
+    }
+  }
+  *output_length = produced;
+  return PSA_SUCCESS;
+}
+
+static void bee_psa_cipher_increment_counter(uint8_t counter[16]) {
+  for (int i = BEE_AES_BLOCK_SIZE - 1; i >= 0; i--) {
+    if (++counter[i] != 0U) {
+      break;
+    }
+  }
+}
+
+static int bee_psa_cipher_next_stream(bee_psa_cipher_operation_t *operation) {
+  if (operation->algorithm == PSA_ALG_CFB) {
+    memcpy(operation->iv, operation->buffer, BEE_AES_BLOCK_SIZE);
+  } else if (operation->algorithm == PSA_ALG_OFB) {
+    memcpy(operation->iv, operation->stream, BEE_AES_BLOCK_SIZE);
+  } else {
+    bee_psa_cipher_increment_counter(operation->iv);
+  }
+
+  operation->stream_used = 0U;
+  return bee_psa_ecb_crypt(operation->key, operation->key_length,
+                           operation->iv, operation->stream, false) == PSA_SUCCESS
+             ? BEE_CRYPTO_SUCCESS
+             : BEE_CRYPTO_ERROR_HARDWARE;
+}
+
+static psa_status_t bee_psa_cipher_update_stream(
+    bee_psa_cipher_operation_t *operation, const uint8_t *input,
+    size_t input_length, uint8_t *output, size_t *output_length) {
+  size_t produced = input_length;
+
+  while (input_length > 0U) {
+    if (operation->stream_used == BEE_AES_BLOCK_SIZE) {
+      int ret = bee_psa_cipher_next_stream(operation);
+
+      if (ret != BEE_CRYPTO_SUCCESS) {
+        return bee_psa_status(ret);
+      }
+    }
+
+    if (operation->algorithm == PSA_ALG_CFB) {
+      uint8_t ciphertext;
+
+      ciphertext = *input ^ operation->stream[operation->stream_used];
+      operation->buffer[operation->stream_used] =
+          operation->decrypt ? *input : ciphertext;
+      *output = ciphertext;
+    } else {
+      *output = *input ^ operation->stream[operation->stream_used];
+    }
+    operation->stream_used++;
+    input++;
+    output++;
+    input_length--;
+  }
+  *output_length = produced;
   return PSA_SUCCESS;
 }
 
@@ -819,20 +917,39 @@ psa_status_t bee_psa_cipher_update(bee_psa_cipher_operation_t *operation,
                                    const uint8_t *input, size_t input_length,
                                    uint8_t *output, size_t output_size,
                                    size_t *output_length) {
-  psa_status_t status = PSA_SUCCESS;
-  size_t total_length = input_length;
+  psa_status_t status;
+  size_t required_size;
 
-  if (operation->algorithm != PSA_ALG_CBC_NO_PADDING || !operation->iv_set) {
+  if (operation == NULL || output_length == NULL ||
+      (input_length > 0U && (input == NULL || output == NULL))) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (!operation->iv_set) {
     return PSA_ERROR_BAD_STATE;
   }
-  if ((input_length % BEE_AES_BLOCK_SIZE) != 0U) {
-    return PSA_ERROR_INVALID_ARGUMENT;
+  if (operation->algorithm == PSA_ALG_CBC_NO_PADDING) {
+    size_t available = operation->buffer_length + input_length;
+
+    required_size = (available / BEE_AES_BLOCK_SIZE) * BEE_AES_BLOCK_SIZE;
+  } else if (operation->algorithm == PSA_ALG_CBC_PKCS7) {
+    size_t available = operation->buffer_length + input_length;
+
+    if (operation->decrypt) {
+      required_size = available > BEE_AES_BLOCK_SIZE
+                          ? ((available - 1U) / BEE_AES_BLOCK_SIZE) *
+                                BEE_AES_BLOCK_SIZE
+                          : 0U;
+    } else {
+      required_size = (available / BEE_AES_BLOCK_SIZE) * BEE_AES_BLOCK_SIZE;
+    }
+  } else if (operation->algorithm == PSA_ALG_CFB ||
+             operation->algorithm == PSA_ALG_OFB ||
+             operation->algorithm == PSA_ALG_CTR) {
+    required_size = input_length;
+  } else {
+    return PSA_ERROR_BAD_STATE;
   }
-  if ((input_length > 0U && (input == NULL || output == NULL)) ||
-      output_length == NULL) {
-    return PSA_ERROR_INVALID_ARGUMENT;
-  }
-  if (output_size < input_length) {
+  if (output_size < required_size) {
     return PSA_ERROR_BUFFER_TOO_SMALL;
   }
   if (input_length == 0U) {
@@ -843,54 +960,213 @@ psa_status_t bee_psa_cipher_update(bee_psa_cipher_operation_t *operation,
   if (bee_crypto_lock() != BEE_CRYPTO_SUCCESS) {
     return PSA_ERROR_HARDWARE_FAILURE;
   }
-
-  while (input_length > 0U) {
-    uint8_t next_iv[BEE_AES_BLOCK_SIZE];
-    int ret;
-
-    if (operation->decrypt) {
-      memcpy(next_iv, input, sizeof(next_iv));
-    }
-    ret = bee_aes_hw_crypt_block(operation->key, operation->key_length,
-                                 AES_MODE_CBC, input, output, operation->iv,
-                                 operation->decrypt);
-    if (ret != BEE_CRYPTO_SUCCESS) {
-      status = bee_psa_status(ret);
-      break;
-    }
-    if (operation->decrypt) {
-      memcpy(operation->iv, next_iv, sizeof(operation->iv));
-    } else {
-      memcpy(operation->iv, output, sizeof(operation->iv));
-    }
-    input += BEE_AES_BLOCK_SIZE;
-    output += BEE_AES_BLOCK_SIZE;
-    input_length -= BEE_AES_BLOCK_SIZE;
+  if (operation->algorithm == PSA_ALG_CBC_NO_PADDING) {
+    status = bee_psa_cipher_update_cbc_no_padding(
+        operation, input, input_length, output, output_length);
+  } else if (operation->algorithm == PSA_ALG_CBC_PKCS7) {
+    status = bee_psa_cipher_update_cbc_pkcs7(
+        operation, input, input_length, output, output_length);
+  } else {
+    status = bee_psa_cipher_update_stream(
+        operation, input, input_length, output, output_length);
   }
-
   bee_crypto_unlock();
-  if (status == PSA_SUCCESS) {
-    *output_length = total_length;
-  }
   return status;
 }
 
 psa_status_t bee_psa_cipher_finish(bee_psa_cipher_operation_t *operation,
                                    uint8_t *output, size_t output_size,
                                    size_t *output_length) {
-  (void)operation;
-  (void)output;
-  (void)output_size;
-  if (output_length == NULL) {
+  psa_status_t status = PSA_SUCCESS;
+
+  if (operation == NULL || output_length == NULL) {
     return PSA_ERROR_INVALID_ARGUMENT;
   }
   *output_length = 0U;
-  return PSA_SUCCESS;
+  if (operation->algorithm == PSA_ALG_CBC_NO_PADDING) {
+    return operation->buffer_length == 0U ? PSA_SUCCESS
+                                          : PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (operation->algorithm != PSA_ALG_CBC_PKCS7) {
+    return operation->algorithm == PSA_ALG_CFB ||
+                   operation->algorithm == PSA_ALG_OFB ||
+                   operation->algorithm == PSA_ALG_CTR
+               ? PSA_SUCCESS
+               : PSA_ERROR_BAD_STATE;
+  }
+  if (operation->decrypt && operation->buffer_length != BEE_AES_BLOCK_SIZE) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (output_size < BEE_AES_BLOCK_SIZE) {
+    return PSA_ERROR_BUFFER_TOO_SMALL;
+  }
+  if (output == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+
+  if (bee_crypto_lock() != BEE_CRYPTO_SUCCESS) {
+    return PSA_ERROR_HARDWARE_FAILURE;
+  }
+  if (!operation->decrypt) {
+    uint8_t padding = BEE_AES_BLOCK_SIZE - operation->buffer_length;
+
+    memset(&operation->buffer[operation->buffer_length], padding, padding);
+    status = bee_psa_status(
+        bee_psa_cipher_cbc_block(operation, operation->buffer, output));
+    if (status == PSA_SUCCESS) {
+      *output_length = BEE_AES_BLOCK_SIZE;
+    }
+  } else {
+    uint8_t plaintext[BEE_AES_BLOCK_SIZE] = {0};
+    uint8_t padding = 0U;
+    uint8_t diff = 0U;
+
+    status = bee_psa_status(
+        bee_psa_cipher_cbc_block(operation, operation->buffer, plaintext));
+    if (status == PSA_SUCCESS) {
+      padding = plaintext[BEE_AES_BLOCK_SIZE - 1U];
+      for (size_t i = 0; i < BEE_AES_BLOCK_SIZE; i++) {
+        uint8_t mask = (uint8_t)-(i < padding);
+
+        diff |= (plaintext[BEE_AES_BLOCK_SIZE - 1U - i] ^ padding) & mask;
+      }
+      if (padding == 0U || padding > BEE_AES_BLOCK_SIZE || diff != 0U) {
+        status = PSA_ERROR_INVALID_PADDING;
+      }
+    }
+    if (status == PSA_SUCCESS) {
+      *output_length = BEE_AES_BLOCK_SIZE - padding;
+      memcpy(output, plaintext, *output_length);
+    }
+    memset(plaintext, 0, sizeof(plaintext));
+  }
+  bee_crypto_unlock();
+  return status;
 }
 
 psa_status_t bee_psa_cipher_abort(bee_psa_cipher_operation_t *operation) {
   memset(operation, 0, sizeof(*operation));
   return PSA_SUCCESS;
+}
+
+psa_status_t bee_psa_cipher_encrypt(const psa_key_attributes_t *attributes,
+                                    const uint8_t *key_buffer,
+                                    size_t key_buffer_size, psa_algorithm_t alg,
+                                    const uint8_t *iv, size_t iv_length,
+                                    const uint8_t *input, size_t input_length,
+                                    uint8_t *output, size_t output_size,
+                                    size_t *output_length) {
+  bee_psa_cipher_operation_t operation;
+  size_t update_length;
+  size_t finish_length;
+  psa_status_t status;
+
+  if (output_length == NULL || (input_length > 0U && input == NULL) ||
+      output == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (alg == PSA_ALG_ECB_NO_PADDING) {
+    status = bee_psa_validate_key(attributes, key_buffer, key_buffer_size);
+    if (status != PSA_SUCCESS) {
+      return status;
+    }
+    if (iv_length != 0U || input_length != BEE_AES_BLOCK_SIZE) {
+      return PSA_ERROR_NOT_SUPPORTED;
+    }
+    if (output_size < BEE_AES_BLOCK_SIZE) {
+      return PSA_ERROR_BUFFER_TOO_SMALL;
+    }
+    if (bee_crypto_lock() != BEE_CRYPTO_SUCCESS) {
+      return PSA_ERROR_HARDWARE_FAILURE;
+    }
+    status = bee_psa_ecb_crypt(key_buffer, key_buffer_size, input, output, false);
+    bee_crypto_unlock();
+    if (status == PSA_SUCCESS) {
+      *output_length = BEE_AES_BLOCK_SIZE;
+    }
+    return status;
+  }
+
+  status = bee_psa_cipher_encrypt_setup(&operation, attributes, key_buffer,
+                                        key_buffer_size, alg);
+  if (status != PSA_SUCCESS) {
+    return status;
+  }
+  status = bee_psa_cipher_set_iv(&operation, iv, iv_length);
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_cipher_update(&operation, input, input_length, output,
+                                   output_size, &update_length);
+  }
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_cipher_finish(&operation, output + update_length,
+                                   output_size - update_length, &finish_length);
+  }
+  if (status == PSA_SUCCESS) {
+    *output_length = update_length + finish_length;
+  }
+  bee_psa_cipher_abort(&operation);
+  return status;
+}
+
+psa_status_t bee_psa_cipher_decrypt(const psa_key_attributes_t *attributes,
+                                    const uint8_t *key_buffer,
+                                    size_t key_buffer_size, psa_algorithm_t alg,
+                                    const uint8_t *input, size_t input_length,
+                                    uint8_t *output, size_t output_size,
+                                    size_t *output_length) {
+  bee_psa_cipher_operation_t operation;
+  size_t update_length;
+  size_t finish_length;
+  psa_status_t status;
+
+  if (output_length == NULL || input == NULL || output == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (alg == PSA_ALG_ECB_NO_PADDING) {
+    status = bee_psa_validate_key(attributes, key_buffer, key_buffer_size);
+    if (status != PSA_SUCCESS) {
+      return status;
+    }
+    if (input_length != BEE_AES_BLOCK_SIZE) {
+      return PSA_ERROR_NOT_SUPPORTED;
+    }
+    if (output_size < BEE_AES_BLOCK_SIZE) {
+      return PSA_ERROR_BUFFER_TOO_SMALL;
+    }
+    if (bee_crypto_lock() != BEE_CRYPTO_SUCCESS) {
+      return PSA_ERROR_HARDWARE_FAILURE;
+    }
+    status = bee_psa_ecb_crypt(key_buffer, key_buffer_size, input, output, true);
+    bee_crypto_unlock();
+    if (status == PSA_SUCCESS) {
+      *output_length = BEE_AES_BLOCK_SIZE;
+    }
+    return status;
+  }
+  if (input_length < BEE_AES_BLOCK_SIZE) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+
+  status = bee_psa_cipher_decrypt_setup(&operation, attributes, key_buffer,
+                                        key_buffer_size, alg);
+  if (status != PSA_SUCCESS) {
+    return status;
+  }
+  status = bee_psa_cipher_set_iv(&operation, input, BEE_AES_BLOCK_SIZE);
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_cipher_update(
+        &operation, input + BEE_AES_BLOCK_SIZE, input_length - BEE_AES_BLOCK_SIZE,
+        output, output_size, &update_length);
+  }
+  if (status == PSA_SUCCESS) {
+    status = bee_psa_cipher_finish(&operation, output + update_length,
+                                   output_size - update_length, &finish_length);
+  }
+  if (status == PSA_SUCCESS) {
+    *output_length = update_length + finish_length;
+  }
+  bee_psa_cipher_abort(&operation);
+  return status;
 }
 
 psa_status_t
