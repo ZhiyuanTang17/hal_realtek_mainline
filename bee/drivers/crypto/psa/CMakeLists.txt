@@ -9,7 +9,3 @@ if(CONFIG_SOC_SERIES_RTL87X2G)
 elseif(CONFIG_SOC_SERIES_RTL8752H)
   zephyr_compile_definitions(BEE_CRYPTO_RTL8752H)
 endif()
-
-if(CONFIG_CRYPTO_BEE_AES_SWAP_BUF)
-  zephyr_compile_definitions(BEE_CRYPTO_SWAP_BUFFER)
-endif()

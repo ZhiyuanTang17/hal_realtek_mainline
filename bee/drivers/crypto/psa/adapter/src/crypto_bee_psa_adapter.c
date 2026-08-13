@@ -38,7 +38,7 @@ void bee_crypto_unlock(void) {
 }
 
 static void bee_aes_copy_to_hw(const uint8_t *src, uint32_t *dst, size_t len) {
-#if defined(BEE_CRYPTO_SWAP_BUFFER)
+#if defined(BEE_CRYPTO_RTL8752H)
   swap_buf(src, (uint8_t *)dst, (uint16_t)len);
 #else
   memcpy(dst, src, len);
@@ -47,7 +47,7 @@ static void bee_aes_copy_to_hw(const uint8_t *src, uint32_t *dst, size_t len) {
 
 static void bee_aes_copy_from_hw(const uint32_t *src, uint8_t *dst,
                                  size_t len) {
-#if defined(BEE_CRYPTO_SWAP_BUFFER)
+#if defined(BEE_CRYPTO_RTL8752H)
   swap_buf((const uint8_t *)src, dst, (uint16_t)len);
 #else
   memcpy(dst, src, len);
