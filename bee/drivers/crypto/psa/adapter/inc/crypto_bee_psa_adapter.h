@@ -71,6 +71,7 @@ int bee_ecc_p256_mod_inv(const uint32_t value[BEE_ECC_P256_WORDS],
 int bee_ecc_p256_mul(const uint32_t scalar[BEE_ECC_P256_WORDS],
                      const struct bee_ecc_point *point,
                      struct bee_ecc_point *result);
+int bee_ecc_p256_validate_public(const struct bee_ecc_point *point);
 int bee_ecc_p256_add(const struct bee_ecc_point *left,
                      const struct bee_ecc_point *right,
                      struct bee_ecc_point *result);

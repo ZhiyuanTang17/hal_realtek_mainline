@@ -321,6 +321,54 @@ int bee_ecc_p256_mod_inv(const uint32_t value[BEE_ECC_P256_WORDS],
       hw_ecc_compute(result, BEE_ECC_B_ADDR, BEE_MOD_INVERSE_ENTRY));
 }
 
+static int bee_ecc_p256_compare(const uint32_t left[BEE_ECC_P256_WORDS],
+                                const uint32_t right[BEE_ECC_P256_WORDS]) {
+  for (size_t i = BEE_ECC_P256_WORDS; i > 0U; i--) {
+    if (left[i - 1U] < right[i - 1U]) {
+      return -1;
+    }
+    if (left[i - 1U] > right[i - 1U]) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int bee_ecc_p256_validate_public(const struct bee_ecc_point *point) {
+  uint32_t left[BEE_ECC_P256_WORDS];
+  uint32_t right[BEE_ECC_P256_WORDS];
+  uint32_t temporary[BEE_ECC_P256_WORDS];
+  int status;
+
+  if (point == NULL || bee_ecc_p256_compare(point->x, bee_p256_prime) >= 0 ||
+      bee_ecc_p256_compare(point->y, bee_p256_prime) >= 0) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  status = bee_ecc_p256_mod_prepare(bee_p256_prime);
+  if (status == BEE_CRYPTO_SUCCESS) {
+    status = bee_ecc_p256_mod_mul(point->y, point->y, left);
+  }
+  if (status == BEE_CRYPTO_SUCCESS) {
+    status = bee_ecc_p256_mod_mul(point->x, point->x, temporary);
+  }
+  if (status == BEE_CRYPTO_SUCCESS) {
+    status = bee_ecc_p256_mod_add(temporary, bee_p256_a, temporary);
+  }
+  if (status == BEE_CRYPTO_SUCCESS) {
+    status = bee_ecc_p256_mod_mul(temporary, point->x, right);
+  }
+  if (status == BEE_CRYPTO_SUCCESS) {
+    status = bee_ecc_p256_mod_add(right, bee_p256_b, right);
+  }
+  if (status != BEE_CRYPTO_SUCCESS) {
+    return status;
+  }
+  return memcmp(left, right, sizeof(left)) == 0
+             ? BEE_CRYPTO_SUCCESS
+             : BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+}
+
 int bee_ecc_p256_mul(const uint32_t scalar[BEE_ECC_P256_WORDS],
                      const struct bee_ecc_point *point,
                      struct bee_ecc_point *result) {
@@ -449,6 +497,11 @@ int bee_ecc_p256_mul(const uint32_t scalar[BEE_ECC_P256_WORDS],
   (void)scalar;
   (void)point;
   (void)result;
+  return BEE_CRYPTO_ERROR_NOT_SUPPORTED;
+}
+
+int bee_ecc_p256_validate_public(const struct bee_ecc_point *point) {
+  (void)point;
   return BEE_CRYPTO_ERROR_NOT_SUPPORTED;
 }
 
