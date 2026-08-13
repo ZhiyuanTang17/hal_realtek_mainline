@@ -100,6 +100,95 @@ int bee_aes_hw_crypt_block(const uint8_t *key, size_t key_len,
   return BEE_CRYPTO_SUCCESS;
 }
 
+int bee_sha256_hw_compute(const uint8_t *input, size_t input_length,
+                          uint8_t *hash) {
+  uint32_t result[8];
+  uint8_t empty = 0U;
+  int status;
+  bool ret;
+
+  if ((input == NULL && input_length != 0U) || hash == NULL ||
+      input_length > UINT32_MAX) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  status = bee_crypto_lock();
+  if (status != BEE_CRYPTO_SUCCESS) {
+    return status;
+  }
+  ret = hw_sha256(input_length == 0U ? &empty : (uint8_t *)input,
+                  (uint32_t)input_length, result, HW_SHA256_CPU_MODE);
+  bee_crypto_unlock();
+
+  if (!ret) {
+    return BEE_CRYPTO_ERROR_HARDWARE;
+  }
+  memcpy(hash, result, sizeof(result));
+  return BEE_CRYPTO_SUCCESS;
+}
+
+int bee_sha256_hw_start(HW_SHA256_CTX *ctx) {
+  int status;
+
+  if (ctx == NULL) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  status = bee_crypto_lock();
+  if (status != BEE_CRYPTO_SUCCESS) {
+    return status;
+  }
+  hw_sha256_start(ctx, NULL);
+  bee_crypto_unlock();
+  return BEE_CRYPTO_SUCCESS;
+}
+
+int bee_sha256_hw_update(HW_SHA256_CTX *ctx, const uint8_t *input,
+                         size_t input_length) {
+  int status;
+  bool ret;
+
+  if (ctx == NULL || (input == NULL && input_length != 0U) ||
+      input_length > UINT32_MAX) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+  if (input_length == 0U) {
+    return BEE_CRYPTO_SUCCESS;
+  }
+
+  status = bee_crypto_lock();
+  if (status != BEE_CRYPTO_SUCCESS) {
+    return status;
+  }
+  ret = hw_sha256_cpu_update(ctx, (uint8_t *)input, (uint32_t)input_length);
+  bee_crypto_unlock();
+
+  return ret ? BEE_CRYPTO_SUCCESS : BEE_CRYPTO_ERROR_HARDWARE;
+}
+
+int bee_sha256_hw_finish(HW_SHA256_CTX *ctx, uint8_t *hash) {
+  uint32_t result[8];
+  int status;
+  bool ret;
+
+  if (ctx == NULL || hash == NULL) {
+    return BEE_CRYPTO_ERROR_INVALID_ARGUMENT;
+  }
+
+  status = bee_crypto_lock();
+  if (status != BEE_CRYPTO_SUCCESS) {
+    return status;
+  }
+  ret = hw_sha256_finish(ctx, result);
+  bee_crypto_unlock();
+
+  if (!ret) {
+    return BEE_CRYPTO_ERROR_HARDWARE;
+  }
+  memcpy(hash, result, sizeof(result));
+  return BEE_CRYPTO_SUCCESS;
+}
+
 #if defined(BEE_CRYPTO_RTL87X2G)
 #define BEE_PKE_MMEM_ADDR 0x50090000U
 #define BEE_ECC_N_ADDR (BEE_PKE_MMEM_ADDR + 0x000U)

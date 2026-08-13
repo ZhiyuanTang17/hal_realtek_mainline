@@ -34,8 +34,14 @@ struct bee_psa_ccm_context {
 };
 
 psa_status_t bee_psa_init(void) {
-  return bee_crypto_init() == BEE_CRYPTO_SUCCESS ? PSA_SUCCESS
-                                                 : PSA_ERROR_HARDWARE_FAILURE;
+  int status = bee_crypto_init();
+
+  if (status != BEE_CRYPTO_SUCCESS) {
+    return PSA_ERROR_HARDWARE_FAILURE;
+  }
+
+  hw_sha256_init();
+  return PSA_SUCCESS;
 }
 
 static psa_status_t bee_psa_status(int status) {
@@ -49,6 +55,112 @@ static psa_status_t bee_psa_status(int status) {
   return status == BEE_CRYPTO_ERROR_INVALID_ARGUMENT
              ? PSA_ERROR_INVALID_ARGUMENT
              : PSA_ERROR_HARDWARE_FAILURE;
+}
+
+psa_status_t bee_psa_hash_compute(psa_algorithm_t alg, const uint8_t *input,
+                                  size_t input_length, uint8_t *hash,
+                                  size_t hash_size, size_t *hash_length) {
+  size_t required_size = PSA_HASH_LENGTH(PSA_ALG_SHA_256);
+  psa_status_t status;
+
+  if (alg != PSA_ALG_SHA_256) {
+    return PSA_ERROR_NOT_SUPPORTED;
+  }
+  if ((input == NULL && input_length != 0U) || hash_length == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (hash_size < required_size) {
+    return PSA_ERROR_BUFFER_TOO_SMALL;
+  }
+  if (hash == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+
+  status = bee_psa_status(bee_sha256_hw_compute(input, input_length, hash));
+  if (status == PSA_SUCCESS) {
+    *hash_length = required_size;
+  }
+  return status;
+}
+
+psa_status_t bee_psa_hash_setup(bee_psa_hash_operation_t *operation,
+                                psa_algorithm_t alg) {
+  psa_status_t status;
+
+  if (operation == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (alg != PSA_ALG_SHA_256) {
+    return PSA_ERROR_NOT_SUPPORTED;
+  }
+
+  memset(operation, 0, sizeof(*operation));
+  status = bee_psa_status(bee_sha256_hw_start(&operation->context));
+  if (status == PSA_SUCCESS) {
+    operation->algorithm = alg;
+  }
+  return status;
+}
+
+psa_status_t bee_psa_hash_clone(const bee_psa_hash_operation_t *source_operation,
+                                bee_psa_hash_operation_t *target_operation) {
+  if (source_operation == NULL || target_operation == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (source_operation->algorithm != PSA_ALG_SHA_256) {
+    return PSA_ERROR_BAD_STATE;
+  }
+
+  memcpy(target_operation, source_operation, sizeof(*target_operation));
+  return PSA_SUCCESS;
+}
+
+psa_status_t bee_psa_hash_update(bee_psa_hash_operation_t *operation,
+                                 const uint8_t *input, size_t input_length) {
+  if (operation == NULL || (input == NULL && input_length != 0U)) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (operation->algorithm != PSA_ALG_SHA_256) {
+    return PSA_ERROR_BAD_STATE;
+  }
+
+  return bee_psa_status(
+      bee_sha256_hw_update(&operation->context, input, input_length));
+}
+
+psa_status_t bee_psa_hash_finish(bee_psa_hash_operation_t *operation,
+                                 uint8_t *hash, size_t hash_size,
+                                 size_t *hash_length) {
+  size_t required_size = PSA_HASH_LENGTH(PSA_ALG_SHA_256);
+  psa_status_t status;
+
+  if (operation == NULL || hash_length == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+  if (operation->algorithm != PSA_ALG_SHA_256) {
+    return PSA_ERROR_BAD_STATE;
+  }
+  if (hash_size < required_size) {
+    return PSA_ERROR_BUFFER_TOO_SMALL;
+  }
+  if (hash == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+
+  status = bee_psa_status(bee_sha256_hw_finish(&operation->context, hash));
+  if (status == PSA_SUCCESS) {
+    *hash_length = required_size;
+  }
+  return status;
+}
+
+psa_status_t bee_psa_hash_abort(bee_psa_hash_operation_t *operation) {
+  if (operation == NULL) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+
+  memset(operation, 0, sizeof(*operation));
+  return PSA_SUCCESS;
 }
 
 static void bee_psa_p256_read(const uint8_t *input, size_t input_length,

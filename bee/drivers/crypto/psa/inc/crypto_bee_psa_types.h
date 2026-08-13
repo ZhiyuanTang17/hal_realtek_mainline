@@ -11,6 +11,19 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if defined(BEE_CRYPTO_RTL87X2G)
+#include <crypto_engine_nsc.h>
+#elif defined(BEE_CRYPTO_RTL8752H)
+#include <rtl876x_hw_sha256.h>
+#else
+#error "Unsupported Realtek Bee SoC"
+#endif
+
+typedef struct {
+  HW_SHA256_CTX context;
+  psa_algorithm_t algorithm;
+} bee_psa_hash_operation_t;
+
 typedef struct {
   uint8_t key[32];
   uint8_t iv[16];

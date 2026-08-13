@@ -15,6 +15,7 @@
 #include <crypto_engine_nsc.h>
 #elif defined(BEE_CRYPTO_RTL8752H)
 #include <hw_aes.h>
+#include <rtl876x_hw_sha256.h>
 #else
 #error "Unsupported Realtek Bee SoC"
 #endif
@@ -47,6 +48,13 @@ void bee_crypto_unlock(void);
 int bee_aes_hw_crypt_block(const uint8_t *key, size_t key_len,
                            T_HW_AES_MODE mode, const uint8_t *in, uint8_t *out,
                            const uint8_t *iv, bool decrypt);
+
+int bee_sha256_hw_compute(const uint8_t *input, size_t input_length,
+                          uint8_t *hash);
+int bee_sha256_hw_start(HW_SHA256_CTX *ctx);
+int bee_sha256_hw_update(HW_SHA256_CTX *ctx, const uint8_t *input,
+                         size_t input_length);
+int bee_sha256_hw_finish(HW_SHA256_CTX *ctx, uint8_t *hash);
 
 int bee_ecc_p256_enable(void);
 void bee_ecc_p256_disable(void);
