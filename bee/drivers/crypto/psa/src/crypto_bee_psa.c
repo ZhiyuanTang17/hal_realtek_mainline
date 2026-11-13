@@ -1578,6 +1578,37 @@ psa_status_t bee_psa_aead_decrypt_setup(bee_psa_aead_operation_t *operation,
                             alg, true);
 }
 
+static psa_status_t bee_psa_aead_build_params(
+    bee_psa_aead_operation_t *operation) {
+  uint64_t length = operation->payload_length;
+
+  if (operation->aad_length >= 0xff00U) {
+    return PSA_ERROR_NOT_SUPPORTED;
+  }
+  if (operation->length_size < sizeof(length) &&
+      length >= (UINT64_C(1) << (8U * operation->length_size))) {
+    return PSA_ERROR_INVALID_ARGUMENT;
+  }
+
+  operation->b0[0] = (operation->aad_length > 0U ? 0x40U : 0U) |
+                     (((operation->tag_length - 2U) / 2U) << 3) |
+                     (operation->length_size - 1U);
+  memcpy(&operation->b0[1], operation->nonce, operation->nonce_length);
+  for (size_t i = 0; i < operation->length_size; i++) {
+    operation->b0[15U - i] = (uint8_t)length;
+    length >>= 8;
+  }
+
+  if (operation->aad_length > 0U) {
+    operation->aad_block[0] = (uint8_t)(operation->aad_length >> 8);
+    operation->aad_block[1] = (uint8_t)operation->aad_length;
+    operation->aad_block_used = 2U;
+  }
+  bee_psa_aead_counter(operation, 1U);
+
+  return PSA_SUCCESS;
+}
+
 psa_status_t bee_psa_aead_set_nonce(bee_psa_aead_operation_t *operation,
                                     const uint8_t *nonce, size_t nonce_length) {
   if (nonce == NULL || nonce_length < 7U || nonce_length > 13U) {
@@ -1587,43 +1618,23 @@ psa_status_t bee_psa_aead_set_nonce(bee_psa_aead_operation_t *operation,
   operation->nonce_length = nonce_length;
   operation->length_size = 15U - nonce_length;
   operation->nonce_set = 1U;
+
+  if (operation->lengths_set) {
+    return bee_psa_aead_build_params(operation);
+  }
   return PSA_SUCCESS;
 }
 
 psa_status_t bee_psa_aead_set_lengths(bee_psa_aead_operation_t *operation,
                                       size_t ad_length,
                                       size_t plaintext_length) {
-  uint64_t length = plaintext_length;
-
-  if (!operation->nonce_set) {
-    return PSA_ERROR_BAD_STATE;
-  }
-  if (ad_length >= 0xff00U) {
-    return PSA_ERROR_NOT_SUPPORTED;
-  }
-  if (operation->length_size < sizeof(length) &&
-      length >= (UINT64_C(1) << (8U * operation->length_size))) {
-    return PSA_ERROR_INVALID_ARGUMENT;
-  }
-
   operation->aad_length = ad_length;
   operation->payload_length = plaintext_length;
-  operation->b0[0] = (ad_length > 0U ? 0x40U : 0U) |
-                     (((operation->tag_length - 2U) / 2U) << 3) |
-                     (operation->length_size - 1U);
-  memcpy(&operation->b0[1], operation->nonce, operation->nonce_length);
-  for (size_t i = 0; i < operation->length_size; i++) {
-    operation->b0[15U - i] = (uint8_t)length;
-    length >>= 8;
-  }
-
-  if (ad_length > 0U) {
-    operation->aad_block[0] = (uint8_t)(ad_length >> 8);
-    operation->aad_block[1] = (uint8_t)ad_length;
-    operation->aad_block_used = 2U;
-  }
-  bee_psa_aead_counter(operation, 1U);
   operation->lengths_set = 1U;
+
+  if (operation->nonce_set) {
+    return bee_psa_aead_build_params(operation);
+  }
   return PSA_SUCCESS;
 }
 
@@ -1631,7 +1642,8 @@ psa_status_t bee_psa_aead_update_ad(bee_psa_aead_operation_t *operation,
                                     const uint8_t *input, size_t input_length) {
   psa_status_t status = PSA_SUCCESS;
 
-  if (!operation->lengths_set || operation->payload_processed != 0U ||
+  if (!operation->lengths_set || !operation->nonce_set ||
+      operation->payload_processed != 0U ||
       input_length > operation->aad_length - operation->aad_processed ||
       (input_length > 0U && input == NULL)) {
     return PSA_ERROR_BAD_STATE;
@@ -1702,7 +1714,7 @@ psa_status_t bee_psa_aead_update(bee_psa_aead_operation_t *operation,
                                  size_t *output_length) {
   psa_status_t status;
 
-  if (!operation->lengths_set ||
+  if (!operation->lengths_set || !operation->nonce_set ||
       input_length > operation->payload_length - operation->payload_processed ||
       (input_length > 0U && (input == NULL || output == NULL)) ||
       output_length == NULL) {

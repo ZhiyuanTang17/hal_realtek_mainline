@@ -287,6 +287,17 @@ int bee_sha2_hw_compute(const uint8_t *input, size_t input_length,
   return BEE_CRYPTO_SUCCESS;
 }
 
+static void bee_sha256_hw_restore(HW_SHA256_CTX *ctx) {
+  HW_SHA256_CTX saved;
+
+  if (ctx->total[0] >= sizeof(ctx->buffer) || ctx->total[1] != 0U) {
+    return;
+  }
+  saved = *ctx;
+  hw_sha256_start(ctx, NULL);
+  *ctx = saved;
+}
+
 int bee_sha256_hw_start(HW_SHA256_CTX *ctx) {
   int status;
 
@@ -320,6 +331,7 @@ int bee_sha256_hw_update(HW_SHA256_CTX *ctx, const uint8_t *input,
   if (status != BEE_CRYPTO_SUCCESS) {
     return status;
   }
+  bee_sha256_hw_restore(ctx);
   ret = hw_sha256_cpu_update(ctx, (uint8_t *)input, (uint32_t)input_length);
   bee_crypto_unlock();
 
@@ -339,6 +351,7 @@ int bee_sha256_hw_finish(HW_SHA256_CTX *ctx, uint8_t *hash) {
   if (status != BEE_CRYPTO_SUCCESS) {
     return status;
   }
+  bee_sha256_hw_restore(ctx);
   ret = hw_sha256_finish(ctx, result);
   bee_crypto_unlock();
 
