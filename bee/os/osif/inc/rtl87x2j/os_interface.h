@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026, Realtek Semiconductor Corporation
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef OS_INTERFACE_H
 #define OS_INTERFACE_H
 
@@ -8,12 +14,16 @@
 #include "osif.h"
 #include "os_sched.h"
 
+/**
+ * @cond INTERNAL
+ */
+
 typedef struct _OS_INTERFACE_INFO
 {
-    void *(*os_mem_alloc_intern)(RAM_TYPE ram_type, size_t size);
-    void *(*os_mem_zalloc_intern)(RAM_TYPE ram_type, size_t size);
-    void *(*os_mem_aligned_alloc_intern)(RAM_TYPE ram_type, size_t size, uint8_t alignment);
-    void *(*os_mem_realloc_intern)(RAM_TYPE ram_type, void *ptr, size_t size);
+    void *(*os_mem_alloc)(RAM_TYPE ram_type, size_t size);
+    void *(*os_mem_zalloc)(RAM_TYPE ram_type, size_t size);
+    void *(*os_mem_aligned_alloc)(RAM_TYPE ram_type, size_t size, uint8_t alignment);
+    void *(*os_mem_realloc)(RAM_TYPE ram_type, void *ptr, size_t size);
     void (* os_mem_free)(void *p_block);
     void (* os_mem_aligned_free)(void *p_block);
     size_t (* os_mem_peek)(RAM_TYPE ram_type);
@@ -22,11 +32,11 @@ typedef struct _OS_INTERFACE_INFO
 
     bool (* os_msg_queue_create)(void **pp_handle,  const char *p_name, uint32_t msg_num,
                                  uint32_t msg_size);
-    bool (* os_msg_queue_delete_intern)(void *p_handle);
-    bool (* os_msg_queue_peek_intern)(void *p_handle, uint32_t *p_msg_num);
-    bool (* os_msg_send_intern)(void *p_handle, void *p_msg, uint32_t wait_ms);
-    bool (* os_msg_recv_intern)(void *p_handle, void *p_msg, uint32_t wait_ms);
-    bool (* os_msg_peek_intern)(void *p_handle, void *p_msg, uint32_t wait_ms);
+    bool (* os_msg_queue_delete)(void *p_handle);
+    bool (* os_msg_queue_peek)(void *p_handle, uint32_t *p_msg_num);
+    bool (* os_msg_send)(void *p_handle, void *p_msg, uint32_t wait_ms);
+    bool (* os_msg_recv)(void *p_handle, void *p_msg, uint32_t wait_ms);
+    bool (* os_msg_peek)(void *p_handle, void *p_msg, uint32_t wait_ms);
 
     bool (* os_alloc_secure_ctx)(uint32_t stack_size);
     bool (* os_task_create)(void **pp_handle, const char *p_name, void (*p_routine)(void *),
@@ -98,5 +108,9 @@ typedef struct _OS_INTERFACE_INFO
 } T_OS_INTERFACE_INFO;
 
 extern T_OS_INTERFACE_INFO os_interface;
+
+/**
+ * @endcond
+ */
 
 #endif /* OS_INTERFACE_H */

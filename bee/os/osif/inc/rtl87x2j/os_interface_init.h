@@ -1,6 +1,9 @@
-/**
- * Copyright (c) 2015, Realsil Semiconductor Corporation. All rights reserved.
+/*
+ * Copyright (c) 2026, Realtek Semiconductor Corporation
+ *
+ * SPDX-License-Identifier: Apache-2.0
  */
+
 #ifndef _OS_INTERFACE_H_
 #define _OS_INTERFACE_H_
 
